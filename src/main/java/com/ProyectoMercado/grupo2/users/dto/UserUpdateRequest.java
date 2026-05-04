@@ -1,34 +1,49 @@
 package com.ProyectoMercado.grupo2.users.dto;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
-public class UserResponse {
-    private UUID id;
+public class UserUpdateRequest {
+
+    @NotBlank
+    @Size(max = 100)
     private String nombre;
+
+    @NotBlank
+    @Email
+    @Size(max = 150)
     private String email;
+
+    @Size(max = 255)
+    private String password;
+
+    @NotBlank
+    @Pattern(regexp = "agricultor|comprador|transportista|admin")
     private String tipoUsuario;
+
+    @NotBlank
+    @Pattern(regexp = "activo|inactivo|suspendido|pendiente")
     private String estado;
+
+    @Size(max = 15)
     private String telefono;
+
+    @Size(max = 200)
     private String direccion;
+
+    @Size(max = 100)
     private String ciudad;
+
+    @Size(max = 100)
     private String departamento;
+
+    @Size(max = 10)
     private String codigoPostal;
+
+    @Size(max = 255)
     private String fotoPerfilUrl;
-    private BigDecimal calificacionPromedio;
-    private Integer totalCalificaciones;
-    private Boolean verificado;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public String getNombre() {
         return nombre;
@@ -44,6 +59,14 @@ public class UserResponse {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getTipoUsuario() {
@@ -108,45 +131,5 @@ public class UserResponse {
 
     public void setFotoPerfilUrl(String fotoPerfilUrl) {
         this.fotoPerfilUrl = fotoPerfilUrl;
-    }
-
-    public BigDecimal getCalificacionPromedio() {
-        return calificacionPromedio;
-    }
-
-    public void setCalificacionPromedio(BigDecimal calificacionPromedio) {
-        this.calificacionPromedio = calificacionPromedio;
-    }
-
-    public Integer getTotalCalificaciones() {
-        return totalCalificaciones;
-    }
-
-    public void setTotalCalificaciones(Integer totalCalificaciones) {
-        this.totalCalificaciones = totalCalificaciones;
-    }
-
-    public Boolean getVerificado() {
-        return verificado;
-    }
-
-    public void setVerificado(Boolean verificado) {
-        this.verificado = verificado;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 }

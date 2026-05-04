@@ -3,7 +3,10 @@ package com.ProyectoMercado.grupo2.users.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.ColumnTransformer;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,16 +22,18 @@ public class UserEntity {
     @Column(nullable = false, length = 100)
     private String nombre;
 
-    @Column(nullable = false, length = 100)
-    private String apellido;
-
     @Column(nullable = false, unique = true, length = 150)
     private String email;
 
+    @Column(name = "password_hash", nullable = false, length = 255)
+    private String passwordHash;
+
     @Column(name = "tipo_usuario", nullable = false)
+    @ColumnTransformer(write = "?::tipo_usuario_enum")
     private String tipoUsuario;
 
     @Column(nullable = false)
+    @ColumnTransformer(write = "?::estado_usuario_enum")
     private String estado;
 
     @Column(length = 15)
@@ -43,8 +48,11 @@ public class UserEntity {
     @Column(length = 100)
     private String departamento;
 
-    @Column(length = 50)
-    private String pais;
+    @Column(name = "codigo_postal", length = 10)
+    private String codigoPostal;
+
+    @Column(name = "foto_perfil_url", length = 255)
+    private String fotoPerfilUrl;
 
     @Column(name = "calificacion_promedio", precision = 3, scale = 2)
     private BigDecimal calificacionPromedio;
@@ -76,20 +84,20 @@ public class UserEntity {
         this.nombre = nombre;
     }
 
-    public String getApellido() {
-        return apellido;
-    }
-
-    public void setApellido(String apellido) {
-        this.apellido = apellido;
-    }
-
     public String getEmail() {
         return email;
     }
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public String getTipoUsuario() {
@@ -140,12 +148,20 @@ public class UserEntity {
         this.departamento = departamento;
     }
 
-    public String getPais() {
-        return pais;
+    public String getCodigoPostal() {
+        return codigoPostal;
     }
 
-    public void setPais(String pais) {
-        this.pais = pais;
+    public void setCodigoPostal(String codigoPostal) {
+        this.codigoPostal = codigoPostal;
+    }
+
+    public String getFotoPerfilUrl() {
+        return fotoPerfilUrl;
+    }
+
+    public void setFotoPerfilUrl(String fotoPerfilUrl) {
+        this.fotoPerfilUrl = fotoPerfilUrl;
     }
 
     public BigDecimal getCalificacionPromedio() {
@@ -186,5 +202,24 @@ public class UserEntity {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (id == null) {
+            id = UUID.randomUUID();
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = now;
+        }
+        if (updatedAt == null) {
+            updatedAt = now;
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }
