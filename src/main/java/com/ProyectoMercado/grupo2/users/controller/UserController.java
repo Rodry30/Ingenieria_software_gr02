@@ -1,7 +1,7 @@
 package com.ProyectoMercado.grupo2.users.controller;
 
 import com.ProyectoMercado.grupo2.users.dto.UserResponse;
-import com.ProyectoMercado.grupo2.users.service.UserService;
+import com.ProyectoMercado.grupo2.users.serviceImplements.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
