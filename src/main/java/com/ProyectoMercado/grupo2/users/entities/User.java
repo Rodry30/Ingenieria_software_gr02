@@ -1,26 +1,84 @@
-package com.ProyectoMercado.grupo2.users.dto;
+package com.ProyectoMercado.grupo2.users.entities;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public class UserResponse {
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @Column(name = "nombre", length = 100, nullable = false)
     private String nombre;
-    private String apellido;
+
+    @Column(name = "email", length = 150, nullable = false, unique = true)
     private String email;
+
+    @Column(name = "password_hash", length = 255, nullable = false)
+    private String passwordHash;
+
+    @Column(name = "tipo_usuario", nullable = false)
     private String tipoUsuario;
-    private String estado;
+
+    @Column(name = "estado", nullable = false)
+    private String estado = "pendiente";
+
+    @Column(name = "telefono", length = 15)
     private String telefono;
+
+    // ubicacion_geo is omitted here to avoid issues without hibernate-spatial
+
+    @Column(name = "direccion", length = 200)
     private String direccion;
+
+    @Column(name = "ciudad", length = 100)
     private String ciudad;
+
+    @Column(name = "departamento", length = 100)
     private String departamento;
-    private String pais;
-    private BigDecimal calificacionPromedio;
-    private Integer totalCalificaciones;
-    private Boolean verificado;
+
+    @Column(name = "codigo_postal", length = 10)
+    private String codigoPostal;
+
+    @Column(name = "foto_perfil_url", length = 255)
+    private String fotoPerfilUrl;
+
+    @Column(name = "calificacion_promedio", precision = 3, scale = 2)
+    private BigDecimal calificacionPromedio = BigDecimal.ZERO;
+
+    @Column(name = "total_calificaciones")
+    private Integer totalCalificaciones = 0;
+
+    @Column(name = "verificado")
+    private Boolean verificado = false;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(name = "ultimo_login")
+    private LocalDateTime ultimoLogin;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public User() {
+    }
 
     public UUID getId() {
         return id;
@@ -38,20 +96,20 @@ public class UserResponse {
         this.nombre = nombre;
     }
 
-    public String getApellido() {
-        return apellido;
-    }
-
-    public void setApellido(String apellido) {
-        this.apellido = apellido;
-    }
-
     public String getEmail() {
         return email;
     }
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public String getTipoUsuario() {
@@ -102,12 +160,20 @@ public class UserResponse {
         this.departamento = departamento;
     }
 
-    public String getPais() {
-        return pais;
+    public String getCodigoPostal() {
+        return codigoPostal;
     }
 
-    public void setPais(String pais) {
-        this.pais = pais;
+    public void setCodigoPostal(String codigoPostal) {
+        this.codigoPostal = codigoPostal;
+    }
+
+    public String getFotoPerfilUrl() {
+        return fotoPerfilUrl;
+    }
+
+    public void setFotoPerfilUrl(String fotoPerfilUrl) {
+        this.fotoPerfilUrl = fotoPerfilUrl;
     }
 
     public BigDecimal getCalificacionPromedio() {
@@ -148,5 +214,13 @@ public class UserResponse {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getUltimoLogin() {
+        return ultimoLogin;
+    }
+
+    public void setUltimoLogin(LocalDateTime ultimoLogin) {
+        this.ultimoLogin = ultimoLogin;
     }
 }

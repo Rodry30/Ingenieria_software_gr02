@@ -1,7 +1,6 @@
 INSERT INTO users (
     id,
     nombre,
-    apellido,
     email,
     password_hash,
     tipo_usuario,
@@ -10,7 +9,6 @@ INSERT INTO users (
     direccion,
     ciudad,
     departamento,
-    pais,
     verificado,
     created_at,
     updated_at
@@ -18,8 +16,7 @@ INSERT INTO users (
 VALUES
 (
     uuid_generate_v4(),
-    'Juan',
-    'Perez',
+    'Juan Perez',
     'juan.perez@agromarket.com',
     '$2a$10$dummyHashForTestingOnly1234567890',
     'agricultor',
@@ -28,15 +25,13 @@ VALUES
     'Av. Los Cultivos 123',
     'Lima',
     'Lima',
-    'Peru',
     true,
     NOW(),
     NOW()
 ),
 (
     uuid_generate_v4(),
-    'Maria',
-    'Lopez',
+    'Maria Lopez',
     'maria.lopez@agromarket.com',
     '$2a$10$dummyHashForTestingOnly0987654321',
     'comprador',
@@ -45,15 +40,13 @@ VALUES
     'Jr. Comercio 456',
     'Arequipa',
     'Arequipa',
-    'Peru',
     true,
     NOW(),
     NOW()
 ),
 (
     uuid_generate_v4(),
-    'Admin',
-    'Sistema',
+    'Admin Sistema',
     'admin@agromarket.com',
     '$2a$10$dummyHashForTestingOnly1122334455',
     'admin',
@@ -62,7 +55,6 @@ VALUES
     'Centro Empresarial',
     'Cusco',
     'Cusco',
-    'Peru',
     true,
     NOW(),
     NOW()

@@ -1,64 +1,27 @@
-package com.ProyectoMercado.grupo2.users.entity;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+package com.ProyectoMercado.grupo2.users.dtos;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
-@Table(name = "users")
-public class UserEntity {
-
-    @Id
+public class UserDTO {
     private UUID id;
-
-    @Column(nullable = false, length = 100)
     private String nombre;
-
-    @Column(nullable = false, length = 100)
-    private String apellido;
-
-    @Column(nullable = false, unique = true, length = 150)
     private String email;
-
-    @Column(name = "tipo_usuario", nullable = false)
     private String tipoUsuario;
-
-    @Column(nullable = false)
     private String estado;
-
-    @Column(length = 15)
     private String telefono;
-
-    @Column(length = 255)
     private String direccion;
-
-    @Column(length = 100)
     private String ciudad;
-
-    @Column(length = 100)
     private String departamento;
-
-    @Column(length = 50)
-    private String pais;
-
-    @Column(name = "calificacion_promedio", precision = 3, scale = 2)
+    private String codigoPostal;
+    private String fotoPerfilUrl;
     private BigDecimal calificacionPromedio;
-
-    @Column(name = "total_calificaciones")
     private Integer totalCalificaciones;
-
     private Boolean verificado;
-
-    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+    private LocalDateTime ultimoLogin;
 
     public UUID getId() {
         return id;
@@ -74,14 +37,6 @@ public class UserEntity {
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
-    }
-
-    public String getApellido() {
-        return apellido;
-    }
-
-    public void setApellido(String apellido) {
-        this.apellido = apellido;
     }
 
     public String getEmail() {
@@ -140,12 +95,20 @@ public class UserEntity {
         this.departamento = departamento;
     }
 
-    public String getPais() {
-        return pais;
+    public String getCodigoPostal() {
+        return codigoPostal;
     }
 
-    public void setPais(String pais) {
-        this.pais = pais;
+    public void setCodigoPostal(String codigoPostal) {
+        this.codigoPostal = codigoPostal;
+    }
+
+    public String getFotoPerfilUrl() {
+        return fotoPerfilUrl;
+    }
+
+    public void setFotoPerfilUrl(String fotoPerfilUrl) {
+        this.fotoPerfilUrl = fotoPerfilUrl;
     }
 
     public BigDecimal getCalificacionPromedio() {
@@ -186,5 +149,13 @@ public class UserEntity {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getUltimoLogin() {
+        return ultimoLogin;
+    }
+
+    public void setUltimoLogin(LocalDateTime ultimoLogin) {
+        this.ultimoLogin = ultimoLogin;
     }
 }
