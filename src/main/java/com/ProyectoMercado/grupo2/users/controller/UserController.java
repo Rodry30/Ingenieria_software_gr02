@@ -3,7 +3,7 @@ package com.ProyectoMercado.grupo2.users.controller;
 import com.ProyectoMercado.grupo2.users.dto.UserCreateRequest;
 import com.ProyectoMercado.grupo2.users.dto.UserResponse;
 import com.ProyectoMercado.grupo2.users.dto.UserUpdateRequest;
-import com.ProyectoMercado.grupo2.users.service.UserService;
+import com.ProyectoMercado.grupo2.users.serviceImplements.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -23,7 +23,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
-@Tag(name = "Users", description = "CRUD de usuarios")
+@Tag(name = "Users", description = "Operaciones de lectura para usuarios")
 public class UserController {
 
     private final UserService userService;

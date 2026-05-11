@@ -1,4 +1,4 @@
-package com.ProyectoMercado.grupo2.users.service;
+package com.ProyectoMercado.grupo2.users.serviceImplements;
 
 import com.ProyectoMercado.grupo2.users.dto.UserCreateRequest;
 import com.ProyectoMercado.grupo2.users.dto.UserResponse;

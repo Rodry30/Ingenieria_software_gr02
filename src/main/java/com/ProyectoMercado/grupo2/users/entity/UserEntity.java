@@ -7,6 +7,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.ColumnTransformer;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,10 +20,10 @@ public class UserEntity {
     @Id
     private UUID id;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "nombre")
     private String nombre;
 
-    @Column(nullable = false, unique = true, length = 150)
+    @Column(name = "email",nullable = false, unique = true, length = 150)
     private String email;
 
     @Column(name = "password_hash", nullable = false, length = 255)
@@ -36,16 +37,19 @@ public class UserEntity {
     @ColumnTransformer(write = "?::estado_usuario_enum")
     private String estado;
 
-    @Column(length = 15)
+    @Column(name = "telefono")
     private String telefono;
 
-    @Column(length = 255)
+    @Column(name = "ubicacion_geo", columnDefinition = "POINT")
+    private String ubicacionGeo; // simple por ahora, ver nota abajo
+
+    @Column(name = "direccion")
     private String direccion;
 
-    @Column(length = 100)
+    @Column(name = "ciudad")
     private String ciudad;
 
-    @Column(length = 100)
+    @Column(name = "departamento")
     private String departamento;
 
     @Column(name = "codigo_postal", length = 10)
@@ -57,12 +61,11 @@ public class UserEntity {
     @Column(name = "calificacion_promedio", precision = 3, scale = 2)
     private BigDecimal calificacionPromedio;
 
-    @Column(name = "total_calificaciones")
-    private Integer totalCalificaciones;
-
+    @Column(name = "verificado")
     private Boolean verificado;
 
-    @Column(name = "created_at", nullable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
