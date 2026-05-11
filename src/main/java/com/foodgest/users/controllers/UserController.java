@@ -41,26 +41,26 @@ public class UserController {
     @GetMapping("/{id}")
     @Operation(summary = "Obtener usuario por ID")
     public UserResponse obtenerUsuario(@PathVariable UUID id) {
-        return userService.obtenerPorId(id);
+        return userService.listId(id);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Crear usuario")
     public UserResponse crearUsuario(@Valid @RequestBody UserCreateRequest request) {
-        return userService.crear(request);
+        return userService.insert(request);
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar usuario")
     public UserResponse actualizarUsuario(@PathVariable UUID id, @Valid @RequestBody UserUpdateRequest request) {
-        return userService.actualizar(id, request);
+        return userService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Eliminar usuario")
     public void eliminarUsuario(@PathVariable UUID id) {
-        userService.eliminar(id);
+        userService.delete(id);
     }
 }
