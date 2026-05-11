@@ -1,5 +1,65 @@
 package com.foodgest.catalogo.dtos;
 
-public class ProductoConFotosResponseDto {
-}
+import com.foodgest.catalogo.entities.Producto;
+import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
+public class ProductoConFotosResponseDto {
+    private UUID id;
+    private UUID categoriaId;
+    private String categoriaNombre;
+    private String nombre;
+    private String descripcion;
+    private BigDecimal precio;
+    private Integer stock;
+    private String unidadMedidaDefault;
+    private String imagenUrl;
+    private Boolean activo;
+    private List<FotoProductoDto> fotos;
+
+    public static ProductoConFotosResponseDto from(Producto p) {
+        ProductoConFotosResponseDto dto = new ProductoConFotosResponseDto();
+        dto.id = p.getId();
+        if (p.getCategoria() != null) {
+            dto.categoriaId = p.getCategoria().getId();
+            dto.categoriaNombre = p.getCategoria().getNombre();
+        }
+        dto.nombre = p.getNombre();
+        dto.descripcion = p.getDescripcion();
+        dto.precio = p.getPrecio();
+        dto.stock = p.getStock();
+        dto.unidadMedidaDefault = p.getUnidadMedidaDefault();
+        dto.imagenUrl = p.getImagenUrl();
+        dto.activo = p.getActivo();
+        dto.fotos = p.getFotos() != null
+                ? p.getFotos().stream().map(FotoProductoDto::from).collect(Collectors.toList())
+                : Collections.emptyList();
+        return dto;
+    }
+
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+    public UUID getCategoriaId() { return categoriaId; }
+    public void setCategoriaId(UUID categoriaId) { this.categoriaId = categoriaId; }
+    public String getCategoriaNombre() { return categoriaNombre; }
+    public void setCategoriaNombre(String categoriaNombre) { this.categoriaNombre = categoriaNombre; }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    public BigDecimal getPrecio() { return precio; }
+    public void setPrecio(BigDecimal precio) { this.precio = precio; }
+    public Integer getStock() { return stock; }
+    public void setStock(Integer stock) { this.stock = stock; }
+    public String getUnidadMedidaDefault() { return unidadMedidaDefault; }
+    public void setUnidadMedidaDefault(String u) { this.unidadMedidaDefault = u; }
+    public String getImagenUrl() { return imagenUrl; }
+    public void setImagenUrl(String imagenUrl) { this.imagenUrl = imagenUrl; }
+    public Boolean getActivo() { return activo; }
+    public void setActivo(Boolean activo) { this.activo = activo; }
+    public List<FotoProductoDto> getFotos() { return fotos; }
+    public void setFotos(List<FotoProductoDto> fotos) { this.fotos = fotos; }
+}
