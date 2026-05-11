@@ -26,6 +26,7 @@ public class Categoria {
     @Column(name = "orden", columnDefinition = "INT DEFAULT 0")
     private Integer orden = 0;
 
+
     public Categoria() {
     }
 
