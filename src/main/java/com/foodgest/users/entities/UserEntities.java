@@ -1,13 +1,18 @@
 package com.foodgest.users.entities;
 
 import jakarta.persistence.*;
+import jakarta.persistence.Table;
+import jakarta.persistence.PreUpdate;
+import org.hibernate.annotations.ColumnTransformer;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "users")
-public class User {
+public class UserEntities {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -23,17 +28,20 @@ public class User {
     private String passwordHash;
 
     @Column(name = "tipo_usuario", nullable = false)
+    @ColumnTransformer(write = "?::tipo_usuario_enum")
     private String tipoUsuario;
 
-    @Column(name = "estado", nullable = false)
-    private String estado = "pendiente";
+    @Column(nullable = false)
+    @ColumnTransformer(write = "?::estado_usuario_enum")
+    private String estado;
 
     @Column(name = "telefono", length = 15)
     private String telefono;
 
-    // ubicacion_geo is omitted here to avoid issues without hibernate-spatial
+    @Column(name = "ubicacion_geo", columnDefinition = "POINT")
+    private String ubicacionGeo; // simple por ahora, ver nota abajo
 
-    @Column(name = "direccion", length = 200)
+    @Column(name = "direccion")
     private String direccion;
 
     @Column(name = "ciudad", length = 100)
@@ -49,7 +57,7 @@ public class User {
     private String fotoPerfilUrl;
 
     @Column(name = "calificacion_promedio", precision = 3, scale = 2)
-    private BigDecimal calificacionPromedio = BigDecimal.ZERO;
+    private BigDecimal calificacionPromedio;
 
     @Column(name = "total_calificaciones")
     private Integer totalCalificaciones = 0;
@@ -57,7 +65,8 @@ public class User {
     @Column(name = "verificado")
     private Boolean verificado = false;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
@@ -77,7 +86,7 @@ public class User {
         updatedAt = LocalDateTime.now();
     }
 
-    public User() {
+    public UserEntities() {
     }
 
     public UUID getId() {
@@ -95,6 +104,7 @@ public class User {
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
+
 
     public String getEmail() {
         return email;

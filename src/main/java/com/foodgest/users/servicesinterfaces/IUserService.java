@@ -1,15 +1,17 @@
 package com.foodgest.users.servicesinterfaces;
 
-import com.foodgest.users.entities.User;
+import com.foodgest.users.dtos.UserCreateRequest;
+import com.foodgest.users.dtos.UserResponse;
+import com.foodgest.users.dtos.UserUpdateRequest;
+
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 public interface IUserService {
-    List<User> list();
-    void insert(User user);
-    Optional<User> listId(UUID id);
-    void update(User user);
+    List<UserResponse> list();
+    UserResponse insert(UserCreateRequest request);
+    UserResponse listId(UUID id);
+    UserResponse update(UUID id,UserUpdateRequest user);
     void delete(UUID id);
 }
 

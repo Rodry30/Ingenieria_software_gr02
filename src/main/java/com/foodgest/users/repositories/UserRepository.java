@@ -1,9 +1,12 @@
 package com.foodgest.users.repositories;
 
-import com.foodgest.users.entities.User;
+import com.foodgest.users.entities.UserEntities;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.UUID;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, UUID> {}
+public interface UserRepository extends JpaRepository<UserEntities, UUID> {
+    boolean existsByEmail(String email);
+    boolean existsByEmailAndIdNot(String email, UUID id);
+}

@@ -1,72 +1,66 @@
 package com.foodgest.users.controllers;
 
-import com.foodgest.users.dtos.UserResponseDto;
-import com.foodgest.users.dtos.UserCreateDto;
-import com.foodgest.users.entities.User;
-import com.foodgest.users.servicesinterfaces.IUserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import com.foodgest.users.dtos.UserCreateRequest;
+import com.foodgest.users.dtos.UserResponse;
+import com.foodgest.users.dtos.UserUpdateRequest;
+import com.foodgest.users.servicesimplements.UserServiceImpl;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
+@Tag(name = "Users", description = "Operaciones de lectura para usuarios")
 public class UserController {
-    @Autowired private IUserService uS;
+
+    private final UserServiceImpl userService;
+
+    public UserController(UserServiceImpl userService) {
+        this.userService = userService;
+    }
 
     @GetMapping
-    public List<UserResponseDto> list() {
-        return uS.list().stream().map(u -> {
-            UserResponseDto dto = new UserResponseDto();
-            dto.setId(u.getId()); dto.setNombre(u.getNombre()); dto.setEmail(u.getEmail());
-            dto.setTipoUsuario(u.getTipoUsuario()); dto.setEstado(u.getEstado());
-            dto.setTelefono(u.getTelefono()); dto.setDireccion(u.getDireccion());
-            dto.setCiudad(u.getCiudad()); dto.setDepartamento(u.getDepartamento());
-            dto.setCodigoPostal(u.getCodigoPostal()); dto.setFotoPerfilUrl(u.getFotoPerfilUrl());
-            dto.setCalificacionPromedio(u.getCalificacionPromedio());
-            dto.setTotalCalificaciones(u.getTotalCalificaciones());
-            dto.setVerificado(u.getVerificado()); dto.setCreatedAt(u.getCreatedAt());
-            dto.setUpdatedAt(u.getUpdatedAt()); dto.setUltimoLogin(u.getUltimoLogin());
-            return dto;
-        }).collect(Collectors.toList());
+    @Operation(summary = "Listar usuarios")
+    public List<UserResponse> listarUsuarios() {
+        return userService.list();
     }
-    @PostMapping
-    public void insert(@RequestBody UserCreateDto dto) {
-        User u = new User();
-        u.setNombre(dto.getNombre()); u.setEmail(dto.getEmail()); u.setPasswordHash(dto.getPasswordHash());
-        u.setTipoUsuario(dto.getTipoUsuario()); u.setTelefono(dto.getTelefono());
-        u.setDireccion(dto.getDireccion()); u.setCiudad(dto.getCiudad());
-        u.setDepartamento(dto.getDepartamento()); u.setCodigoPostal(dto.getCodigoPostal());
-        u.setFotoPerfilUrl(dto.getFotoPerfilUrl()); uS.insert(u);
-    }
+
     @GetMapping("/{id}")
-    public UserResponseDto listId(@PathVariable("id") UUID id) {
-        User u = uS.listId(id).orElse(new User());
-        UserResponseDto dto = new UserResponseDto();
-        dto.setId(u.getId()); dto.setNombre(u.getNombre()); dto.setEmail(u.getEmail());
-        dto.setTipoUsuario(u.getTipoUsuario()); dto.setEstado(u.getEstado());
-        dto.setTelefono(u.getTelefono()); dto.setDireccion(u.getDireccion());
-        dto.setCiudad(u.getCiudad()); dto.setDepartamento(u.getDepartamento());
-        dto.setCodigoPostal(u.getCodigoPostal()); dto.setFotoPerfilUrl(u.getFotoPerfilUrl());
-        dto.setCalificacionPromedio(u.getCalificacionPromedio());
-        dto.setTotalCalificaciones(u.getTotalCalificaciones());
-        dto.setVerificado(u.getVerificado()); dto.setCreatedAt(u.getCreatedAt());
-        dto.setUpdatedAt(u.getUpdatedAt()); dto.setUltimoLogin(u.getUltimoLogin());
-        return dto;
+    @Operation(summary = "Obtener usuario por ID")
+    public UserResponse obtenerUsuario(@PathVariable UUID id) {
+        return userService.listId(id);
     }
-    @PutMapping
-    public void update(@RequestBody UserResponseDto dto) {
-        User u = uS.listId(dto.getId()).orElse(new User());
-        u.setNombre(dto.getNombre()); u.setEmail(dto.getEmail());
-        u.setTipoUsuario(dto.getTipoUsuario()); u.setEstado(dto.getEstado());
-        u.setTelefono(dto.getTelefono()); u.setDireccion(dto.getDireccion());
-        u.setCiudad(dto.getCiudad()); u.setDepartamento(dto.getDepartamento());
-        u.setCodigoPostal(dto.getCodigoPostal()); u.setFotoPerfilUrl(u.getFotoPerfilUrl());
-        u.setCalificacionPromedio(dto.getCalificacionPromedio());
-        u.setTotalCalificaciones(dto.getTotalCalificaciones());
-        u.setVerificado(dto.getVerificado()); uS.update(u);
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Crear usuario")
+    public UserResponse crearUsuario(@Valid @RequestBody UserCreateRequest request) {
+        return userService.insert(request);
     }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Actualizar usuario")
+    public UserResponse actualizarUsuario(@PathVariable UUID id, @Valid @RequestBody UserUpdateRequest request) {
+        return userService.update(id, request);
+    }
+
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable("id") UUID id) { uS.delete(id); }
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Eliminar usuario")
+    public void eliminarUsuario(@PathVariable UUID id) {
+        userService.delete(id);
+    }
 }
