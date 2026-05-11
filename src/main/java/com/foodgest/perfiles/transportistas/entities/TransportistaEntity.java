@@ -1,51 +1,75 @@
-package com.foodgest.perfiles.transportistas.dtos;
+package com.foodgest.perfiles.transportistas.entities;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import com.foodgest.users.entities.UserEntities;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
-public class TransportistaCreateDto {
+@Entity
+@Table(name = "transportistas")
+public class TransportistaEntity {
 
-    @NotNull(message = "El usuario es obligatorio")
-    private UUID usuarioId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
-    @NotBlank
-    @Size(max = 100)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private UserEntities usuario;
+
+    @Column(name = "nombre_completo", length = 100)
     private String nombreCompleto;
 
-    @NotBlank
-    @Size(max = 8)
+    @Column(name = "dni", length = 8)
     private String dni;
 
-    @NotBlank
-    @Size(max = 20)
+    @Column(name = "licencia_conducir", length = 20)
     private String licenciaConducir;
 
-    @Size(max = 10)
+    @Column(name = "tipo_licencia", length = 10)
     private String tipoLicencia;
 
-    @NotBlank
-    @Size(max = 10)
+    @Column(name = "placa_vehiculo", length = 10)
     private String placaVehiculo;
 
-    @Size(max = 50)
+    @Column(name = "tipo_vehiculo", length = 50)
     private String tipoVehiculo;
 
-    @Size(max = 50)
+    @Column(name = "marca_vehiculo", length = 50)
     private String marcaVehiculo;
 
+    @Column(name = "capacidad_toneladas", precision = 8, scale = 2)
     private BigDecimal capacidadToneladas;
 
+    @Column(name = "verificado")
+    private Boolean verificado;
+
+    @Column(name = "calificacion_promedio", precision = 3, scale = 2)
+    private BigDecimal calificacionPromedio;
+
+    @Column(name = "disponible")
     private Boolean disponible;
 
+    @Column(name = "latitud_actual", precision = 10, scale = 7)
     private BigDecimal latitudActual;
 
+    @Column(name = "longitud_actual", precision = 10, scale = 7)
     private BigDecimal longitudActual;
 
-    public UUID getUsuarioId() { return usuarioId; }
-    public void setUsuarioId(UUID usuarioId) { this.usuarioId = usuarioId; }
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public UserEntities getUsuario() { return usuario; }
+    public void setUsuario(UserEntities usuario) { this.usuario = usuario; }
 
     public String getNombreCompleto() { return nombreCompleto; }
     public void setNombreCompleto(String nombreCompleto) { this.nombreCompleto = nombreCompleto; }
@@ -71,6 +95,12 @@ public class TransportistaCreateDto {
     public BigDecimal getCapacidadToneladas() { return capacidadToneladas; }
     public void setCapacidadToneladas(BigDecimal capacidadToneladas) { this.capacidadToneladas = capacidadToneladas; }
 
+    public Boolean getVerificado() { return verificado; }
+    public void setVerificado(Boolean verificado) { this.verificado = verificado; }
+
+    public BigDecimal getCalificacionPromedio() { return calificacionPromedio; }
+    public void setCalificacionPromedio(BigDecimal calificacionPromedio) { this.calificacionPromedio = calificacionPromedio; }
+
     public Boolean getDisponible() { return disponible; }
     public void setDisponible(Boolean disponible) { this.disponible = disponible; }
 
@@ -79,4 +109,7 @@ public class TransportistaCreateDto {
 
     public BigDecimal getLongitudActual() { return longitudActual; }
     public void setLongitudActual(BigDecimal longitudActual) { this.longitudActual = longitudActual; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

@@ -1,28 +1,57 @@
-package com.foodgest.perfiles.compradores.dtos;
+package com.foodgest.perfiles.compradores.entities;
 
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import com.foodgest.users.entities.UserEntities;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
-public class CompradorUpdateDto {
+@Entity
+@Table(name = "compradores")
+public class CompradorEntity {
 
-    @Pattern(regexp = "particular|empresa|restaurante|supermercado", message = "Tipo de comprador no válido")
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private UserEntities usuario;
+
+    @Column(name = "tipo_comprador")
     private String tipoComprador;
 
-    @Size(max = 150)
+    @Column(name = "razon_social")
     private String razonSocial;
 
-    @Size(max = 11)
+    @Column(name = "ruc", length = 11)
     private String ruc;
 
-    @Size(max = 200)
+    @Column(name = "direccion_entrega_default")
     private String direccionEntregaDefault;
 
+    @Column(name = "latitud_entrega", precision = 10, scale = 7)
     private BigDecimal latitudEntrega;
 
+    @Column(name = "longitud_entrega", precision = 10, scale = 7)
     private BigDecimal longitudEntrega;
 
+    @Column(name = "limite_credito", precision = 10, scale = 2)
     private BigDecimal limiteCredito;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public UserEntities getUsuario() { return usuario; }
+    public void setUsuario(UserEntities usuario) { this.usuario = usuario; }
 
     public String getTipoComprador() { return tipoComprador; }
     public void setTipoComprador(String tipoComprador) { this.tipoComprador = tipoComprador; }
@@ -44,4 +73,7 @@ public class CompradorUpdateDto {
 
     public BigDecimal getLimiteCredito() { return limiteCredito; }
     public void setLimiteCredito(BigDecimal limiteCredito) { this.limiteCredito = limiteCredito; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }
