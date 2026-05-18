@@ -25,11 +25,8 @@ public class ProductoResponseDto {
         }
         dto.nombre = p.getNombre();
         dto.descripcion = p.getDescripcion();
-        dto.precio = p.getPrecio();
-        dto.stock = p.getStock();
         dto.unidadMedidaDefault = p.getUnidadMedidaDefault();
         dto.imagenUrl = p.getImagenUrl();
-        dto.activo = p.getActivo();
         return dto;
     }
 

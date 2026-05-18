@@ -29,11 +29,8 @@ public class ProductoConFotosResponseDto {
         }
         dto.nombre = p.getNombre();
         dto.descripcion = p.getDescripcion();
-        dto.precio = p.getPrecio();
-        dto.stock = p.getStock();
         dto.unidadMedidaDefault = p.getUnidadMedidaDefault();
         dto.imagenUrl = p.getImagenUrl();
-        dto.activo = p.getActivo();
         dto.fotos = p.getFotos() != null
                 ? p.getFotos().stream().map(FotoProductoDto::from).collect(Collectors.toList())
                 : Collections.emptyList();

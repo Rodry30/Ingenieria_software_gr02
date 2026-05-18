@@ -20,11 +20,8 @@ public class ProductoCreateDto {
         p.setCategoria(categoria);
         p.setNombre(this.nombre);
         p.setDescripcion(this.descripcion);
-        p.setPrecio(this.precio);
-        p.setStock(this.stock != null ? this.stock : 0);
         p.setUnidadMedidaDefault(this.unidadMedidaDefault);
         p.setImagenUrl(this.imagenUrl);
-        p.setActivo(this.activo != null ? this.activo : true);
         return p;
     }
 
@@ -32,11 +29,8 @@ public class ProductoCreateDto {
         p.setCategoria(categoria);
         p.setNombre(this.nombre);
         p.setDescripcion(this.descripcion);
-        p.setPrecio(this.precio);
-        if (this.stock != null) p.setStock(this.stock);
         p.setUnidadMedidaDefault(this.unidadMedidaDefault);
         p.setImagenUrl(this.imagenUrl);
-        if (this.activo != null) p.setActivo(this.activo);
     }
 
     public UUID getCategoriaId() { return categoriaId; }

@@ -1,6 +1,9 @@
 package com.foodgest.catalogo.entities;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.ZonedDateTime;
 import java.util.UUID;
 
 @Entity
@@ -24,6 +27,13 @@ public class FotoProducto {
     @Column(name = "es_principal", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean esPrincipal = false;
 
+    @Column(name = "orden", columnDefinition = "INT DEFAULT 0")
+    private Integer orden = 0;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private ZonedDateTime createdAt;
+
     public FotoProducto() {}
 
     public UUID getId() { return id; }
@@ -40,4 +50,12 @@ public class FotoProducto {
 
     public Boolean getEsPrincipal() { return esPrincipal; }
     public void setEsPrincipal(Boolean esPrincipal) { this.esPrincipal = esPrincipal; }
+
+    public Integer getOrden() {return orden;}
+
+    public void setOrden(Integer orden) {this.orden = orden;}
+
+    public ZonedDateTime getCreatedAt() {return createdAt;}
+
+    public void setCreatedAt(ZonedDateTime createdAt) {this.createdAt = createdAt;}
 }

@@ -23,20 +23,11 @@ public class Producto {
     @Column(name = "descripcion", length = 500)
     private String descripcion;
 
-    @Column(name = "precio", precision = 10, scale = 2)
-    private BigDecimal precio;
-
-    @Column(name = "stock")
-    private Integer stock = 0;
-
     @Column(name = "unidad_medida_default", length = 50)
     private String unidadMedidaDefault;
 
     @Column(name = "imagen_url", length = 255)
     private String imagenUrl;
-
-    @Column(name = "activo", columnDefinition = "BOOLEAN DEFAULT TRUE")
-    private Boolean activo = true;
 
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FotoProducto> fotos;
@@ -55,20 +46,11 @@ public class Producto {
     public String getDescripcion() { return descripcion; }
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
 
-    public BigDecimal getPrecio() { return precio; }
-    public void setPrecio(BigDecimal precio) { this.precio = precio; }
-
-    public Integer getStock() { return stock; }
-    public void setStock(Integer stock) { this.stock = stock; }
-
     public String getUnidadMedidaDefault() { return unidadMedidaDefault; }
     public void setUnidadMedidaDefault(String unidadMedidaDefault) { this.unidadMedidaDefault = unidadMedidaDefault; }
 
     public String getImagenUrl() { return imagenUrl; }
     public void setImagenUrl(String imagenUrl) { this.imagenUrl = imagenUrl; }
-
-    public Boolean getActivo() { return activo; }
-    public void setActivo(Boolean activo) { this.activo = activo; }
 
     public List<FotoProducto> getFotos() { return fotos; }
     public void setFotos(List<FotoProducto> fotos) { this.fotos = fotos; }

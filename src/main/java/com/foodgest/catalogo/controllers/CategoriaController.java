@@ -19,6 +19,7 @@ public class CategoriaController {
     @Autowired
     private ICategoriaService categoriaService;
 
+    
     @GetMapping
     public ResponseEntity<List<CategoriaResponseDto>> list() {
         List<CategoriaResponseDto> result = categoriaService.list().stream()

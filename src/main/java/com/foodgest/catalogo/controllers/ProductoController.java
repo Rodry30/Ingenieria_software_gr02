@@ -18,12 +18,15 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/catalogo/productos")
 public class ProductoController {
 
+    //inyectar dependencias de Interfaz Producto
     @Autowired
     private IProductoService productoService;
 
+    //inyectar dependencias de Interfaz Categoria
     @Autowired
     private ICategoriaService categoriaService;
 
+    //listar todos los productos
     @GetMapping
     public ResponseEntity<List<ProductoResponseDto>> list() {
         List<ProductoResponseDto> result = productoService.list().stream()
@@ -32,6 +35,7 @@ public class ProductoController {
         return ResponseEntity.ok(result);
     }
 
+    //listar productos por categoria
     @GetMapping("/categoria/{categoriaId}")
     public ResponseEntity<List<ProductoResponseDto>> listByCategoria(@PathVariable UUID categoriaId) {
         List<ProductoResponseDto> result = productoService.listByCategoria(categoriaId).stream()
@@ -40,6 +44,7 @@ public class ProductoController {
         return ResponseEntity.ok(result);
     }
 
+    //listar productos por id
     @GetMapping("/{id}")
     public ResponseEntity<ProductoConFotosResponseDto> listId(@PathVariable UUID id) {
         return productoService.listId(id)
@@ -47,6 +52,7 @@ public class ProductoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    //Insertar producto, 
     @PostMapping
     public ResponseEntity<ProductoResponseDto> insert(@RequestBody ProductoCreateDto dto) {
         return categoriaService.listId(dto.getCategoriaId()).map(categoria -> {
@@ -56,6 +62,7 @@ public class ProductoController {
         }).orElse(ResponseEntity.badRequest().build());
     }
 
+    //Actualizar producto ingresando Id
     @PutMapping("/{id}")
     public ResponseEntity<ProductoResponseDto> update(@PathVariable UUID id, @RequestBody ProductoCreateDto dto) {
         return productoService.listId(id).map(existing ->
@@ -67,6 +74,7 @@ public class ProductoController {
         ).orElse(ResponseEntity.notFound().build());
     }
 
+    //eliminar producto por su id
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         if (productoService.listId(id).isEmpty()) {
