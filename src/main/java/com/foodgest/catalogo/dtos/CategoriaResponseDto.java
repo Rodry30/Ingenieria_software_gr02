@@ -1,5 +1,6 @@
 package com.foodgest.catalogo.dtos;
 
+import com.foodgest.catalogo.entities.Categoria;
 import java.util.UUID;
 
 public class CategoriaResponseDto {
@@ -9,6 +10,17 @@ public class CategoriaResponseDto {
     private String imagenUrl;
     private Boolean activo;
     private Integer orden;
+
+    public static CategoriaResponseDto from(Categoria c) {
+        CategoriaResponseDto dto = new CategoriaResponseDto();
+        dto.id = c.getId();
+        dto.nombre = c.getNombre();
+        dto.descripcion = c.getDescripcion();
+        dto.imagenUrl = c.getImagenUrl();
+        dto.activo = c.getActivo();
+        dto.orden = c.getOrden();
+        return dto;
+    }
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
