@@ -1,21 +1,20 @@
 package com.foodgest.perfiles.compradores.dtos;
 
-import jakarta.validation.constraints.Pattern;
+import com.foodgest.perfiles.compradores.enums.TipoCompradorEnum;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public class CompradorUpdateDto {
 
-    @Pattern(regexp = "particular|empresa|restaurante|supermercado", message = "Tipo de comprador no válido")
-    private String tipoComprador;
+    private TipoCompradorEnum tipoComprador;
 
     @Size(max = 150)
     private String razonSocial;
 
-    @Size(max = 11)
+    @Size(max = 15)
     private String ruc;
 
-    @Size(max = 200)
+    @Size(max = 255)
     private String direccionEntregaDefault;
 
     private BigDecimal latitudEntrega;
@@ -24,8 +23,8 @@ public class CompradorUpdateDto {
 
     private BigDecimal limiteCredito;
 
-    public String getTipoComprador() { return tipoComprador; }
-    public void setTipoComprador(String tipoComprador) { this.tipoComprador = tipoComprador; }
+    public TipoCompradorEnum getTipoComprador() { return tipoComprador; }
+    public void setTipoComprador(TipoCompradorEnum tipoComprador) { this.tipoComprador = tipoComprador; }
 
     public String getRazonSocial() { return razonSocial; }
     public void setRazonSocial(String razonSocial) { this.razonSocial = razonSocial; }

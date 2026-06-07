@@ -3,7 +3,7 @@ package com.foodgest.perfiles.compradores.servicesimplements;
 import com.foodgest.perfiles.compradores.dtos.CompradorCreateDto;
 import com.foodgest.perfiles.compradores.dtos.CompradorResponseDto;
 import com.foodgest.perfiles.compradores.dtos.CompradorUpdateDto;
-import com.foodgest.perfiles.compradores.entities.CompradorEntity;
+import com.foodgest.perfiles.compradores.entities.Comprador;
 import com.foodgest.perfiles.compradores.repositories.CompradorRepository;
 import com.foodgest.perfiles.compradores.servicesinterfaces.ICompradorService;
 import com.foodgest.users.entities.UserEntities;
@@ -36,7 +36,7 @@ public class CompradorServiceImpl implements ICompradorService {
 
     @Override
     public CompradorResponseDto obtenerPorId(UUID id) {
-        CompradorEntity comprador = compradorRepository.findById(id)
+        Comprador comprador = compradorRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Comprador no encontrado"));
         return toResponse(comprador);
     }
@@ -44,6 +44,10 @@ public class CompradorServiceImpl implements ICompradorService {
     @Override
     @Transactional
     public CompradorResponseDto crear(CompradorCreateDto dto) {
+        if (dto.getUsuarioId() == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "usuarioId es obligatorio");
+        }
+
         UserEntities usuario = userRepository.findById(dto.getUsuarioId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Usuario no encontrado"));
 
@@ -51,15 +55,8 @@ public class CompradorServiceImpl implements ICompradorService {
             throw new ResponseStatusException(BAD_REQUEST, "Este usuario ya tiene perfil de comprador");
         }
 
-        CompradorEntity comprador = new CompradorEntity();
-        comprador.setUsuario(usuario);
-        comprador.setTipoComprador(dto.getTipoComprador());
-        comprador.setRazonSocial(dto.getRazonSocial());
-        comprador.setRuc(dto.getRuc());
-        comprador.setDireccionEntregaDefault(dto.getDireccionEntregaDefault());
-        comprador.setLatitudEntrega(dto.getLatitudEntrega());
-        comprador.setLongitudEntrega(dto.getLongitudEntrega());
-        comprador.setLimiteCredito(dto.getLimiteCredito());
+        Comprador comprador = dto.toEntity(usuario);
+        if (dto.getLimiteCredito() != null) comprador.setLimiteCredito(dto.getLimiteCredito());
 
         return toResponse(compradorRepository.save(comprador));
     }
@@ -67,16 +64,15 @@ public class CompradorServiceImpl implements ICompradorService {
     @Override
     @Transactional
     public CompradorResponseDto actualizar(UUID id, CompradorUpdateDto dto) {
-        CompradorEntity comprador = compradorRepository.findById(id)
+        Comprador comprador = compradorRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Comprador no encontrado"));
-
-        comprador.setTipoComprador(dto.getTipoComprador());
-        comprador.setRazonSocial(dto.getRazonSocial());
-        comprador.setRuc(dto.getRuc());
-        comprador.setDireccionEntregaDefault(dto.getDireccionEntregaDefault());
-        comprador.setLatitudEntrega(dto.getLatitudEntrega());
-        comprador.setLongitudEntrega(dto.getLongitudEntrega());
-        comprador.setLimiteCredito(dto.getLimiteCredito());
+        if (dto.getTipoComprador() != null) comprador.setTipoComprador(dto.getTipoComprador());
+        if (dto.getRazonSocial() != null) comprador.setRazonSocial(dto.getRazonSocial());
+        if (dto.getRuc() != null) comprador.setRuc(dto.getRuc());
+        if (dto.getDireccionEntregaDefault() != null) comprador.setDireccionEntregaDefault(dto.getDireccionEntregaDefault());
+        if (dto.getLatitudEntrega() != null) comprador.setLatitudEntrega(dto.getLatitudEntrega());
+        if (dto.getLongitudEntrega() != null) comprador.setLongitudEntrega(dto.getLongitudEntrega());
+        if (dto.getLimiteCredito() != null) comprador.setLimiteCredito(dto.getLimiteCredito());
 
         return toResponse(compradorRepository.save(comprador));
     }
@@ -90,17 +86,17 @@ public class CompradorServiceImpl implements ICompradorService {
         compradorRepository.deleteById(id);
     }
 
-    private CompradorResponseDto toResponse(CompradorEntity c) {
+    private CompradorResponseDto toResponse(Comprador c) {
         CompradorResponseDto dto = new CompradorResponseDto();
         dto.setId(c.getId());
-        dto.setTipoComprador(c.getTipoComprador());
+        dto.setTipoComprador(c.getTipoComprador() == null ? null : c.getTipoComprador().name());
         dto.setRazonSocial(c.getRazonSocial());
         dto.setRuc(c.getRuc());
         dto.setDireccionEntregaDefault(c.getDireccionEntregaDefault());
         dto.setLatitudEntrega(c.getLatitudEntrega());
         dto.setLongitudEntrega(c.getLongitudEntrega());
         dto.setLimiteCredito(c.getLimiteCredito());
-        dto.setCreatedAt(c.getCreatedAt());
+        dto.setCreatedAt(c.getCreatedAt() == null ? null : c.getCreatedAt().toLocalDateTime());
 
         CompradorResponseDto.UsuarioResumen usuarioResumen = new CompradorResponseDto.UsuarioResumen();
         usuarioResumen.setId(c.getUsuario().getId());

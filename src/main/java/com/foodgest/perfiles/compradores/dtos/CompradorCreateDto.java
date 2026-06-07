@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public class CompradorCreateDto {
 
@@ -31,6 +32,10 @@ public class CompradorCreateDto {
     @DecimalMax(value = "180.0",  message = "La longitud maxima es 180.0")
     private BigDecimal longitudEntrega;
 
+    private UUID usuarioId;
+
+    private BigDecimal limiteCredito;
+
     public Comprador toEntity(UserEntities usuario) {
         Comprador c = new Comprador();
         c.setUsuario(usuario);
@@ -40,6 +45,7 @@ public class CompradorCreateDto {
         c.setDireccionEntregaDefault(this.direccionEntregaDefault);
         c.setLatitudEntrega(this.latitudEntrega);
         c.setLongitudEntrega(this.longitudEntrega);
+        c.setLimiteCredito(this.limiteCredito == null ? null : this.limiteCredito);
         return c;
     }
 
@@ -64,4 +70,10 @@ public class CompradorCreateDto {
     public void setLatitudEntrega(BigDecimal latitudEntrega) { this.latitudEntrega = latitudEntrega; }
     public BigDecimal getLongitudEntrega() { return longitudEntrega; }
     public void setLongitudEntrega(BigDecimal longitudEntrega) { this.longitudEntrega = longitudEntrega; }
+
+    public UUID getUsuarioId() { return usuarioId; }
+    public void setUsuarioId(UUID usuarioId) { this.usuarioId = usuarioId; }
+
+    public BigDecimal getLimiteCredito() { return limiteCredito; }
+    public void setLimiteCredito(BigDecimal limiteCredito) { this.limiteCredito = limiteCredito; }
 }
