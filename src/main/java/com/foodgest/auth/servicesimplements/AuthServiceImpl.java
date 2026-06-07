@@ -1,6 +1,9 @@
 package com.foodgest.auth.servicesimplements;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.foodgest.auth.JwtTokenProvider;
+import com.foodgest.auth.dtos.AuthTokenResponseDto;
+import com.foodgest.auth.dtos.LoginRequestDto;
 import com.foodgest.auth.dtos.RegisterRequestDto;
 import com.foodgest.auth.servicesinterfaces.IAuthService;
 import com.foodgest.perfiles.agricultores.dtos.AgricultorCreateDto;
@@ -11,23 +14,23 @@ import com.foodgest.perfiles.compradores.entities.Comprador;
 import com.foodgest.perfiles.compradores.repositories.CompradorRepository;
 import com.foodgest.shared.exceptions.BusinessException;
 import com.foodgest.users.entities.UserEntities;
-import com.foodgest.users.entities.Wallet;
 import com.foodgest.users.enums.TipoUsuarioEnum;
 import com.foodgest.users.repositories.UserRepository;
-import com.foodgest.users.repositories.WalletRepository;
+import jakarta.validation.Validator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 public class AuthServiceImpl implements IAuthService {
 
-    // MEJORA: BCryptPasswordEncoder se instancia con strength 12 como bean local.
-    // Idealmente deberia estar en una clase @Configuration para reutilizarlo,
-    // pero si no existe aun esa clase de config, lo creamos aqui inline.
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -38,17 +41,23 @@ public class AuthServiceImpl implements IAuthService {
     @Autowired
     private CompradorRepository compradorRepository;
 
-    @Autowired
-    private WalletRepository walletRepository;
-
     // MEJORA: ObjectMapper inyectado como bean (configurado por Spring Boot auto-config)
     // para garantizar que comparte la misma configuracion global (fechas, modulos, etc.)
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private Validator validator;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
     @Override
     @Transactional
-    public UserEntities register(RegisterRequestDto dto) {
+    public AuthTokenResponseDto register(RegisterRequestDto dto) {
 
         // Regla 6: solo se permite agricultor o comprador en este endpoint
         if (dto.getTipoUsuario() != TipoUsuarioEnum.agricultor
@@ -82,23 +91,78 @@ public class AuthServiceImpl implements IAuthService {
         // ── 2. Crear perfil especifico ────────────────────────────────────────
         if (dto.getTipoUsuario() == TipoUsuarioEnum.agricultor) {
             // Regla 4: convertir el Map del campo 'perfil' al DTO concreto
-            AgricultorCreateDto perfilDto = objectMapper.convertValue(
-                    dto.getPerfil(), AgricultorCreateDto.class);
+            AgricultorCreateDto perfilDto = convertPerfil(dto.getPerfil(), AgricultorCreateDto.class);
+
+            var violations = validator.validate(perfilDto);
+            if (!violations.isEmpty()) {
+            String detalles = violations.stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .sorted()
+                .collect(java.util.stream.Collectors.joining("; "));
+            throw new BusinessException(
+                "Perfil de agricultor invalido: " + detalles,
+                HttpStatus.BAD_REQUEST);
+            }
             Agricultor agricultor = perfilDto.toEntity(usuario);
             agricultorRepository.save(agricultor);
 
         } else {
-            CompradorCreateDto perfilDto = objectMapper.convertValue(
-                    dto.getPerfil(), CompradorCreateDto.class);
+            CompradorCreateDto perfilDto = convertPerfil(dto.getPerfil(), CompradorCreateDto.class);
+
+            var violations = validator.validate(perfilDto);
+            if (!violations.isEmpty()) {
+            String detalles = violations.stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .sorted()
+                .collect(java.util.stream.Collectors.joining("; "));
+            throw new BusinessException(
+                "Perfil de comprador invalido: " + detalles,
+                HttpStatus.BAD_REQUEST);
+            }
             Comprador comprador = perfilDto.toEntity(usuario);
             compradorRepository.save(comprador);
         }
 
-        // ── 3. Crear wallet inicial ───────────────────────────────────────────
-        // Regla 5: saldo_disponible = 0, saldo_retenido = 0, moneda = 'PEN'
-        Wallet wallet = Wallet.createDefault(usuario);
-        walletRepository.save(wallet);
+        // La wallet se crea automaticamente en PostgreSQL (trigger trg_crear_wallet).
 
-        return usuario;
+        String token = jwtTokenProvider.generateToken(usuario);
+        return AuthTokenResponseDto.of(token, usuario);
+    }
+
+    @Override
+    @Transactional
+    public AuthTokenResponseDto login(LoginRequestDto dto) {
+        UserEntities usuario = userRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new BusinessException(
+                        "Credenciales invalidas",
+                        HttpStatus.UNAUTHORIZED));
+
+        if (!passwordEncoder.matches(dto.getPassword(), usuario.getPasswordHash())) {
+            throw new BusinessException(
+                    "Credenciales invalidas",
+                    HttpStatus.UNAUTHORIZED);
+        }
+
+        if ("inactivo".equals(usuario.getEstado()) || "suspendido".equals(usuario.getEstado())) {
+            throw new BusinessException(
+                    "Cuenta " + usuario.getEstado() + ". Contacte al administrador.",
+                    HttpStatus.FORBIDDEN);
+        }
+
+        usuario.setUltimoLogin(LocalDateTime.now());
+        userRepository.save(usuario);
+
+        String token = jwtTokenProvider.generateToken(usuario);
+        return AuthTokenResponseDto.of(token, usuario);
+    }
+
+    private <T> T convertPerfil(java.util.Map<String, Object> perfil, Class<T> targetClass) {
+        try {
+            return objectMapper.convertValue(perfil, targetClass);
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException(
+                    "El campo perfil tiene un formato invalido. Revise los campos requeridos.",
+                    HttpStatus.BAD_REQUEST);
+        }
     }
 }

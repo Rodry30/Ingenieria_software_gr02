@@ -1,6 +1,7 @@
 package com.foodgest.auth.dtos;
 
 import com.foodgest.users.enums.TipoUsuarioEnum;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 
 import java.util.Map;
@@ -36,6 +37,19 @@ public class RegisterRequestDto {
     private TipoUsuarioEnum tipoUsuario;
 
     @NotNull(message = "El campo perfil es obligatorio")
+    @Schema(
+            description = "Datos del perfil segun tipoUsuario. Para agricultor use nombreFinca, latitud, longitud, etc.",
+            example = """
+                    {
+                      "nombreFinca": "Finca Los Olivos",
+                      "hectareas": 5.5,
+                      "latitud": -12.0464,
+                      "longitud": -77.0428,
+                      "direccionParcela": "Av. Central 123",
+                      "ruc": "20123456789"
+                    }
+                    """
+    )
     private Map<String, Object> perfil;
 
     public String getNombre() { return nombre; }

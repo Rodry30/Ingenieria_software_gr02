@@ -1,0 +1,12 @@
+{
+  "nombre": "Leonardo",
+  "email": "leonardoplox@hotmail.com",
+  "password": "tili1234",
+  "telefono": "987652123",
+  "tipoUsuario": "agricultor",
+  "perfil": {
+    "additionalProp1": {},
+    "additionalProp2": {},
+    "additionalProp3": {}
+  }
+}

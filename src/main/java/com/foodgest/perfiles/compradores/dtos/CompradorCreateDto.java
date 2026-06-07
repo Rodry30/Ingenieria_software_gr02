@@ -1,5 +1,6 @@
 package com.foodgest.perfiles.compradores.dtos;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.foodgest.perfiles.compradores.entities.Comprador;
 import com.foodgest.perfiles.compradores.enums.TipoCompradorEnum;
 import com.foodgest.users.entities.UserEntities;
@@ -11,6 +12,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CompradorCreateDto {
 
     @NotNull(message = "El tipo de comprador es obligatorio")

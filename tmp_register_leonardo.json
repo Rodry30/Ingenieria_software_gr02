@@ -1,0 +1,14 @@
+{
+  "nombre": "Leonardo",
+  "email": "leonardoplox.new@hotmail.com",
+  "password": "tili1234",
+  "telefono": "987652123",
+  "tipoUsuario": "agricultor",
+  "perfil": {
+    "nombreFinca": "Finca Central",
+    "hectareas": 3.5,
+    "latitud": -12.0464,
+    "longitud": -77.0428,
+    "direccionParcela": "Av. Central 123"
+  }
+}

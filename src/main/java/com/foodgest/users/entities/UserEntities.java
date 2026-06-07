@@ -38,7 +38,7 @@ public class UserEntities {
     @Column(name = "telefono", length = 15)
     private String telefono;
 
-    @Column(name = "ubicacion_geo", columnDefinition = "POINT")
+    @Column(name = "ubicacion_geo", columnDefinition = "GEOGRAPHY(POINT,4326)", insertable = false, updatable = false)
     private String ubicacionGeo; // simple por ahora, ver nota abajo
 
     @Column(name = "direccion")

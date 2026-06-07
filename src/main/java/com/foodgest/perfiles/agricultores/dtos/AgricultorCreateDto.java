@@ -1,5 +1,6 @@
 package com.foodgest.perfiles.agricultores.dtos;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.foodgest.perfiles.agricultores.entities.Agricultor;
 import com.foodgest.users.entities.UserEntities;
 import jakarta.validation.constraints.*;
@@ -16,6 +17,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AgricultorCreateDto {
 
     // No se valida usuarioId aqui: en registro lo aporta el servicio,
