@@ -1,6 +1,10 @@
 package com.foodgest.auth.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.foodgest.auth.CustomUserDetailsService;
+import com.foodgest.auth.JwtRequestFilter;
+import com.foodgest.auth.JwtTokenProvider;
+import com.foodgest.auth.dtos.AuthTokenResponseDto;
 import com.foodgest.auth.dtos.RegisterRequestDto;
 import com.foodgest.auth.servicesinterfaces.IAuthService;
 import com.foodgest.shared.exceptions.BusinessException;
@@ -12,6 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
@@ -27,6 +32,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = AuthController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @ExtendWith(SwebokTestExtension.class)
 public class AuthControllerTest {
 
@@ -38,6 +44,15 @@ public class AuthControllerTest {
 
     @MockBean
     private IAuthService authService;
+
+    @MockBean
+    private JwtRequestFilter jwtRequestFilter;
+
+    @MockBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockBean
+    private CustomUserDetailsService customUserDetailsService;
 
     private RegisterRequestDto validDto;
 
@@ -63,7 +78,8 @@ public class AuthControllerTest {
         mockUser.setTipoUsuario(TipoUsuarioEnum.agricultor.name());
         mockUser.setEstado("pendiente");
 
-        when(authService.register(any(RegisterRequestDto.class))).thenReturn(mockUser);
+        AuthTokenResponseDto authResponse = AuthTokenResponseDto.of("jwt-token-test", mockUser);
+        when(authService.register(any(RegisterRequestDto.class))).thenReturn(authResponse);
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/register")
@@ -72,9 +88,11 @@ public class AuthControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value(201))
                 .andExpect(jsonPath("$.message").value("Usuario registrado exitosamente. Pendiente de aprobacion."))
-                .andExpect(jsonPath("$.data.email").value("juan@test.com"))
-                .andExpect(jsonPath("$.data.estado").value("pendiente"))
-                .andExpect(jsonPath("$.data.passwordHash").doesNotExist()); // No exponer data sensible
+                .andExpect(jsonPath("$.data.token").value("jwt-token-test"))
+                .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.data.user.email").value("juan@test.com"))
+                .andExpect(jsonPath("$.data.user.estado").value("pendiente"))
+                .andExpect(jsonPath("$.data.user.passwordHash").doesNotExist());
     }
 
     @Test

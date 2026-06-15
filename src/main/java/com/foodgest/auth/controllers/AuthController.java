@@ -1,10 +1,12 @@
 package com.foodgest.auth.controllers;
 
+import com.foodgest.auth.dtos.AuthTokenResponseDto;
+import com.foodgest.auth.dtos.LoginRequestDto;
 import com.foodgest.auth.dtos.RegisterRequestDto;
-import com.foodgest.auth.dtos.UserResponseDto;
 import com.foodgest.auth.servicesinterfaces.IAuthService;
 import com.foodgest.shared.response.ApiResponse;
-import com.foodgest.users.entities.UserEntities;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,30 +15,37 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Autenticacion", description = "Registro y login con JWT")
 public class AuthController {
 
     @Autowired
     private IAuthService authService;
 
-    /**
-     * POST /api/auth/register
-     * Endpoint publico. Crea usuario + perfil + wallet en una transaccion.
-     *
-     * @param dto body del request validado por @Valid
-     * @return 201 Created con los datos publicos del usuario
-     */
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<UserResponseDto>> register(
+    @Operation(summary = "Registrar usuario", description = "Crea un usuario agricultor o comprador y retorna un JWT")
+    public ResponseEntity<ApiResponse<AuthTokenResponseDto>> register(
             @Valid @RequestBody RegisterRequestDto dto) {
 
-        UserEntities usuario = authService.register(dto);
-        UserResponseDto responseDto = UserResponseDto.from(usuario);
+        AuthTokenResponseDto response = authService.register(dto);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(
                         201,
                         "Usuario registrado exitosamente. Pendiente de aprobacion.",
-                        responseDto));
+                        response));
+    }
+
+    @PostMapping("/login")
+    @Operation(summary = "Iniciar sesion", description = "Autentica con email y contrasena, retorna un JWT")
+    public ResponseEntity<ApiResponse<AuthTokenResponseDto>> login(
+            @Valid @RequestBody LoginRequestDto dto) {
+
+        AuthTokenResponseDto response = authService.login(dto);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                200,
+                "Inicio de sesion exitoso.",
+                response));
     }
 }

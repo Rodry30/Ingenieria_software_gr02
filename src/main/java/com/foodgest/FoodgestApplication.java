@@ -6,6 +6,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class FoodgestApplication {
     public static void main(String[] args) {
+        // Ensure database exists and run init script before Spring starts
+        try {
+            com.foodgest.db.DatabaseInitializer.ensureDatabaseAndInit();
+        } catch (Exception e) {
+            System.err.println("[DatabaseInitializer] warning: " + e.getMessage());
+        }
+
         SpringApplication.run(FoodgestApplication.class, args);
     }
 }
