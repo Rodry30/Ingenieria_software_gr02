@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/transportistas")
+@RequestMapping("/api/perfiles/transportistas")
 @Tag(name = "Transportistas", description = "Gestión de perfiles de transportistas")
 public class TransportistaController {
 

@@ -12,20 +12,20 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 -- TIPOS ENUMERADOS
 -- ============================================================
 
-CREATE TYPE tipo_usuario_enum      AS ENUM ('agricultor', 'comprador', 'transportista', 'admin');
-CREATE TYPE estado_usuario_enum    AS ENUM ('activo', 'inactivo', 'suspendido', 'pendiente');
-CREATE TYPE estado_oferta_enum     AS ENUM ('activa', 'pausada', 'cerrada', 'expirada', 'agotada');
-CREATE TYPE calidad_enum           AS ENUM ('primera', 'segunda', 'descarte', 'exportacion');
-CREATE TYPE estado_pedido_enum     AS ENUM ('pendiente_pago', 'pagado_por_enviar', 'en_transito', 'entregado_finalizado', 'incidencia', 'cancelado');
-CREATE TYPE estado_negociacion_enum AS ENUM ('pendiente', 'aceptada', 'rechazada', 'expirada', 'contraoferta');
-CREATE TYPE tipo_movimiento_enum   AS ENUM ('venta', 'comision', 'retiro', 'deposito', 'flete', 'reembolso', 'escrow_retencion', 'escrow_liberacion');
-CREATE TYPE tipo_comprador_enum    AS ENUM ('minorista', 'mayorista', 'restaurante', 'supermercado', 'exportadora');
-CREATE TYPE tendencia_enum         AS ENUM ('alza', 'baja', 'estable');
-CREATE TYPE estado_subasta_enum    AS ENUM ('programada', 'activa', 'cerrada', 'cancelada');
-CREATE TYPE frecuencia_enum        AS ENUM ('semanal', 'quincenal', 'mensual');
-CREATE TYPE estado_suscripcion_enum AS ENUM ('activa', 'pausada', 'cancelada', 'expirada');
-CREATE TYPE tipo_licencia_enum     AS ENUM ('A2', 'A3', 'A4', 'B2', 'C');
-CREATE TYPE tipo_vehiculo_enum     AS ENUM ('camion', 'volquete', 'furgon', 'camioneta', 'trailer');
+CREATE TYPE IF NOT EXISTS tipo_usuario_enum      AS ENUM ('agricultor', 'comprador', 'transportista', 'admin');
+CREATE TYPE IF NOT EXISTS estado_usuario_enum    AS ENUM ('activo', 'inactivo', 'suspendido', 'pendiente');
+CREATE TYPE IF NOT EXISTS estado_oferta_enum     AS ENUM ('activa', 'pausada', 'cerrada', 'expirada', 'agotada');
+CREATE TYPE IF NOT EXISTS calidad_enum           AS ENUM ('primera', 'segunda', 'descarte', 'exportacion');
+CREATE TYPE IF NOT EXISTS estado_pedido_enum     AS ENUM ('pendiente_pago', 'pagado_por_enviar', 'en_transito', 'entregado_finalizado', 'incidencia', 'cancelado');
+CREATE TYPE IF NOT EXISTS estado_negociacion_enum AS ENUM ('pendiente', 'aceptada', 'rechazada', 'expirada', 'contraoferta');
+CREATE TYPE IF NOT EXISTS tipo_movimiento_enum   AS ENUM ('venta', 'comision', 'retiro', 'deposito', 'flete', 'reembolso', 'escrow_retencion', 'escrow_liberacion');
+CREATE TYPE IF NOT EXISTS tipo_comprador_enum    AS ENUM ('minorista', 'mayorista', 'restaurante', 'supermercado', 'exportadora');
+CREATE TYPE IF NOT EXISTS tendencia_enum         AS ENUM ('alza', 'baja', 'estable');
+CREATE TYPE IF NOT EXISTS estado_subasta_enum    AS ENUM ('programada', 'activa', 'cerrada', 'cancelada');
+CREATE TYPE IF NOT EXISTS frecuencia_enum        AS ENUM ('semanal', 'quincenal', 'mensual');
+CREATE TYPE IF NOT EXISTS estado_suscripcion_enum AS ENUM ('activa', 'pausada', 'cancelada', 'expirada');
+CREATE TYPE IF NOT EXISTS tipo_licencia_enum     AS ENUM ('A2', 'A3', 'A4', 'B2', 'C');
+CREATE TYPE IF NOT EXISTS tipo_vehiculo_enum     AS ENUM ('camion', 'volquete', 'furgon', 'camioneta', 'trailer');
 
 -- ============================================================
 -- 1. USERS
@@ -147,7 +147,24 @@ CREATE TABLE wallets (
 CREATE INDEX idx_wallets_usuario ON wallets(usuario_id);
 
 -- ============================================================
--- 6. CATEGORIAS
+-- 6. REFRESH_TOKENS
+-- ============================================================
+
+CREATE TABLE refresh_tokens (
+    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    usuario_id  UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token       VARCHAR(120) NOT NULL UNIQUE,
+    expires_at  TIMESTAMPTZ NOT NULL,
+    revoked     BOOLEAN     NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_refresh_tokens_usuario ON refresh_tokens(usuario_id);
+CREATE INDEX idx_refresh_tokens_token   ON refresh_tokens(token);
+CREATE INDEX idx_refresh_tokens_valid   ON refresh_tokens(revoked, expires_at);
+
+-- ============================================================
+-- 7. CATEGORIAS
 -- ============================================================
 
 CREATE TABLE categorias (
@@ -257,6 +274,19 @@ CREATE TABLE precios_mercado (
 CREATE INDEX idx_precios_producto   ON precios_mercado(producto_id);
 CREATE INDEX idx_precios_fecha      ON precios_mercado(fecha_precio DESC);
 CREATE UNIQUE INDEX idx_precios_uniq ON precios_mercado(producto_id, fuente, fecha_precio);
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    usuario_id  UUID         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token       VARCHAR(120) NOT NULL UNIQUE,
+    expires_at  TIMESTAMPTZ  NOT NULL,
+    revoked     BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_usuario ON refresh_tokens(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token   ON refresh_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_valid   ON refresh_tokens(revoked, expires_at);
 
 -- ============================================================
 -- 11. NEGOCIACIONES

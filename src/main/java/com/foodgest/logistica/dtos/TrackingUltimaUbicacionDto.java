@@ -1,5 +1,5 @@
 package com.foodgest.logistica.dtos;
 
-public class TrackingUltimaUbicacionDto {
+public class TrackingUltimaUbicacionDto extends TrackingResponseDto {
 }
 

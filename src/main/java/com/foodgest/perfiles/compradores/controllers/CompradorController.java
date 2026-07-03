@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/compradores")
+@RequestMapping("/api/perfiles/compradores")
 @Tag(name = "Compradores", description = "Gestión de perfiles de compradores")
 public class CompradorController {
 

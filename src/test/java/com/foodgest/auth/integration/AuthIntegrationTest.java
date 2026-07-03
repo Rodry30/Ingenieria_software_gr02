@@ -2,7 +2,6 @@ package com.foodgest.auth.integration;
 
 import com.foodgest.users.entities.UserEntities;
 import com.foodgest.users.repositories.UserRepository;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Valida reglas de base de datos como Unicidad de Email (HU-01) y RUC (HU-02).
  */
 @SpringBootTest
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 public class AuthIntegrationTest {
 
     // Imagen Docker con PostGIS para soportar el campo GEOGRAPHY de agricultores
@@ -44,11 +43,6 @@ public class AuthIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
-
-    @BeforeAll
-    static void beforeAll() {
-        postgres.start();
-    }
 
     @Test
     @DisplayName("HU-01 (BD): Validar que email duplicado lanza excepcion a nivel BD (Unique Constraint)")

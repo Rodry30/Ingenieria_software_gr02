@@ -3,7 +3,10 @@ package com.foodgest.auth.servicesimplements;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.foodgest.auth.JwtTokenProvider;
 import com.foodgest.auth.dtos.AuthTokenResponseDto;
+import com.foodgest.auth.dtos.RefreshTokenDto;
 import com.foodgest.auth.dtos.RegisterRequestDto;
+import com.foodgest.auth.entities.RefreshToken;
+import com.foodgest.auth.repositories.RefreshTokenRepository;
 import com.foodgest.perfiles.agricultores.dtos.AgricultorCreateDto;
 import com.foodgest.perfiles.agricultores.entities.Agricultor;
 import com.foodgest.perfiles.agricultores.repositories.AgricultorRepository;
@@ -28,6 +31,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.time.OffsetDateTime;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,6 +49,7 @@ public class AuthServiceImplTest {
     @Mock private Validator validator;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtTokenProvider jwtTokenProvider;
+    @Mock private RefreshTokenRepository refreshTokenRepository;
 
     // Dependencias externas mockeadas para el Quality Gate (HU-01)
     @Mock private IReniecService reniecService;
@@ -78,7 +84,6 @@ public class AuthServiceImplTest {
         when(objectMapper.convertValue(validDto.getPerfil(), AgricultorCreateDto.class)).thenReturn(perfilDto);
         when(validator.validate(perfilDto)).thenReturn(Collections.emptySet());
         when(passwordEncoder.encode(validDto.getPassword())).thenReturn("hashed-password");
-        when(jwtTokenProvider.generateToken(any(UserEntities.class))).thenReturn("jwt-token");
         // Simular validacion externa de RENIEC
         // when(reniecService.validarDni(anyString())).thenReturn(true); 
         // (Nota: descomentar cuando se inyecte IReniecService en AuthServiceImpl)
@@ -88,13 +93,16 @@ public class AuthServiceImplTest {
 
         // Assert
         assertThat(result).isNotNull();
-        assertThat(result.getToken()).isEqualTo("jwt-token");
+        assertThat(result.getToken()).isNull();
+        assertThat(result.getAccessToken()).isNull();
+        assertThat(result.getRefreshToken()).isNull();
         assertThat(result.getUser()).isNotNull();
         assertThat(result.getUser().getEstado()).isEqualTo("pendiente");
         assertThat(result.getUser().getVerificado()).isFalse();
 
         verify(userRepository, times(1)).save(any(UserEntities.class));
         verify(agricultorRepository, times(1)).save(any(Agricultor.class));
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
 
         // Verificar llamadas a servicios externos (ejemplos)
         // verify(emailService).enviarCorreoConfirmacion(eq(result.getEmail()), eq(result.getNombre()));
@@ -132,5 +140,37 @@ public class AuthServiceImplTest {
         assertThatThrownBy(() -> authService.register(validDto))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Tipo de usuario no permitido");
+    }
+
+    @Test
+    @DisplayName("HU-01: Refresh token valido rota y retorna nuevos tokens")
+    void refresh_ValidToken_ReturnsNewPair() {
+        UserEntities usuario = new UserEntities();
+        usuario.setId(java.util.UUID.randomUUID());
+        usuario.setNombre("Juan Perez");
+        usuario.setEmail("juan@test.com");
+        usuario.setTipoUsuario("agricultor");
+        usuario.setEstado("activo");
+        usuario.setVerificado(true);
+
+        RefreshToken stored = new RefreshToken();
+        stored.setUsuario(usuario);
+        stored.setToken("refresh-actual");
+        stored.setExpiresAt(OffsetDateTime.now().plusDays(1));
+        stored.setRevoked(false);
+
+        RefreshTokenDto dto = new RefreshTokenDto();
+        dto.setRefreshToken("refresh-actual");
+
+        when(refreshTokenRepository.findByToken("refresh-actual")).thenReturn(Optional.of(stored));
+        when(jwtTokenProvider.generateToken(usuario)).thenReturn("nuevo-access-token");
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AuthTokenResponseDto result = authService.refresh(dto);
+
+        assertThat(stored.getRevoked()).isTrue();
+        assertThat(result.getAccessToken()).isEqualTo("nuevo-access-token");
+        assertThat(result.getRefreshToken()).isNotBlank();
+        verify(refreshTokenRepository, atLeastOnce()).save(any(RefreshToken.class));
     }
 }

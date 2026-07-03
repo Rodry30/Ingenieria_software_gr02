@@ -2,6 +2,7 @@ package com.foodgest.auth.controllers;
 
 import com.foodgest.auth.dtos.AuthTokenResponseDto;
 import com.foodgest.auth.dtos.LoginRequestDto;
+import com.foodgest.auth.dtos.RefreshTokenDto;
 import com.foodgest.auth.dtos.RegisterRequestDto;
 import com.foodgest.auth.servicesinterfaces.IAuthService;
 import com.foodgest.shared.response.ApiResponse;
@@ -22,7 +23,7 @@ public class AuthController {
     private IAuthService authService;
 
     @PostMapping("/register")
-    @Operation(summary = "Registrar usuario", description = "Crea un usuario agricultor o comprador y retorna un JWT")
+    @Operation(summary = "Registrar usuario", description = "Crea un usuario agricultor o comprador en estado pendiente")
     public ResponseEntity<ApiResponse<AuthTokenResponseDto>> register(
             @Valid @RequestBody RegisterRequestDto dto) {
 
@@ -47,5 +48,25 @@ public class AuthController {
                 200,
                 "Inicio de sesion exitoso.",
                 response));
+    }
+
+    @PostMapping("/refresh")
+    @Operation(summary = "Renovar token", description = "Emite un nuevo JWT a partir de un token valido")
+    public ResponseEntity<ApiResponse<AuthTokenResponseDto>> refresh(
+            @Valid @RequestBody RefreshTokenDto dto) {
+
+        AuthTokenResponseDto response = authService.refresh(dto);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                200,
+                "Token renovado exitosamente.",
+                response));
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Cerrar sesion", description = "Revoca el refresh token activo")
+    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody RefreshTokenDto dto) {
+        authService.logout(dto);
+        return ResponseEntity.ok(ApiResponse.success(200, "Sesion cerrada correctamente.", null));
     }
 }

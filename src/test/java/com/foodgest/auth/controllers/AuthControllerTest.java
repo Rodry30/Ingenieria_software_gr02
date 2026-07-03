@@ -78,7 +78,7 @@ public class AuthControllerTest {
         mockUser.setTipoUsuario(TipoUsuarioEnum.agricultor.name());
         mockUser.setEstado("pendiente");
 
-        AuthTokenResponseDto authResponse = AuthTokenResponseDto.of("jwt-token-test", mockUser);
+        AuthTokenResponseDto authResponse = AuthTokenResponseDto.pending(mockUser);
         when(authService.register(any(RegisterRequestDto.class))).thenReturn(authResponse);
 
         // Act & Assert
@@ -88,8 +88,9 @@ public class AuthControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value(201))
                 .andExpect(jsonPath("$.message").value("Usuario registrado exitosamente. Pendiente de aprobacion."))
-                .andExpect(jsonPath("$.data.token").value("jwt-token-test"))
-                .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.data.token").doesNotExist())
+                .andExpect(jsonPath("$.data.accessToken").doesNotExist())
+                .andExpect(jsonPath("$.data.refreshToken").doesNotExist())
                 .andExpect(jsonPath("$.data.user.email").value("juan@test.com"))
                 .andExpect(jsonPath("$.data.user.estado").value("pendiente"))
                 .andExpect(jsonPath("$.data.user.passwordHash").doesNotExist());

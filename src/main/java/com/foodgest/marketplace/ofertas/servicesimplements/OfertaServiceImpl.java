@@ -1,5 +1,6 @@
 package com.foodgest.marketplace.ofertas.servicesimplements;
 
+import com.foodgest.marketplace.ofertas.dtos.OfertaMapaResponseDto;
 import com.foodgest.marketplace.ofertas.entities.Oferta;
 import com.foodgest.marketplace.ofertas.repositories.OfertaRepository;
 import com.foodgest.marketplace.ofertas.servicesinterfaces.IOfertaService;
@@ -7,9 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class OfertaServiceImpl implements IOfertaService {
@@ -39,12 +42,25 @@ public class OfertaServiceImpl implements IOfertaService {
     }
 
     @Override
-    @Transactional
-    public void insert(Oferta oferta) { ofertaRepository.save(oferta); }
+    public List<OfertaMapaResponseDto> listMapa(BigDecimal latitud, BigDecimal longitud, BigDecimal radioKm) {
+        return ofertaRepository.findOfertasMapa(latitud, longitud, radioKm).stream()
+                .map(OfertaMapaResponseDto::from)
+                .collect(Collectors.toList());
+    }
 
     @Override
     @Transactional
-    public void update(Oferta oferta) { ofertaRepository.save(oferta); }
+    public void insert(Oferta oferta) {
+        Oferta saved = ofertaRepository.save(oferta);
+        ofertaRepository.sincronizarUbicacionOferta(saved.getId());
+    }
+
+    @Override
+    @Transactional
+    public void update(Oferta oferta) {
+        Oferta saved = ofertaRepository.save(oferta);
+        ofertaRepository.sincronizarUbicacionOferta(saved.getId());
+    }
 
     @Override
     @Transactional

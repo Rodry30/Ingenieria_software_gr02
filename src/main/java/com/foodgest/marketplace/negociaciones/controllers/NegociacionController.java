@@ -96,10 +96,10 @@ public class NegociacionController {
     }
 
     /**
-     * PUT /api/marketplace/negociaciones/{id}
+    /** PUT /api/marketplace/negociaciones/{id}/responder
      * Permite al agricultor responder: aceptar, rechazar o contraofertar.
      */
-    @PutMapping("/{id}")
+    @PutMapping("/{id}/responder")
     public ResponseEntity<NegociacionResponseDto> update(@PathVariable UUID id,
                                                           @Valid @RequestBody NegociacionUpdateDto dto) {
         return negociacionService.listId(id).map(existing -> {

@@ -3,6 +3,7 @@ package com.foodgest.auth;
 import com.foodgest.users.entities.UserEntities;
 import com.foodgest.users.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -10,6 +11,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
+@Primary
 public class CustomUserDetailsService implements UserDetailsService {
 
     @Autowired
@@ -42,6 +44,6 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     private boolean isAccountDisabled(String estado) {
-        return "inactivo".equals(estado) || "suspendido".equals(estado);
+        return !"activo".equals(estado);
     }
 }

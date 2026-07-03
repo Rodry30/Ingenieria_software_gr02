@@ -1,0 +1,14 @@
+{
+  "nombre": "Test Token",
+  "email": "test.token.review@example.com",
+  "password": "tili1234",
+  "telefono": "987654321",
+  "tipoUsuario": "agricultor",
+  "perfil": {
+    "nombreFinca": "Finca Test",
+    "hectareas": 2.0,
+    "latitud": -12.0464,
+    "longitud": -77.0428,
+    "direccionParcela": "Av. Test 1"
+  }
+}

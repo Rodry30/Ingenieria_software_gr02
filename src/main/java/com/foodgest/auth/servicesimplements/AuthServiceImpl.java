@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.foodgest.auth.JwtTokenProvider;
 import com.foodgest.auth.dtos.AuthTokenResponseDto;
 import com.foodgest.auth.dtos.LoginRequestDto;
+import com.foodgest.auth.dtos.RefreshTokenDto;
 import com.foodgest.auth.dtos.RegisterRequestDto;
+import com.foodgest.auth.entities.RefreshToken;
+import com.foodgest.auth.repositories.RefreshTokenRepository;
 import com.foodgest.auth.servicesinterfaces.IAuthService;
 import com.foodgest.perfiles.agricultores.dtos.AgricultorCreateDto;
 import com.foodgest.perfiles.agricultores.entities.Agricultor;
@@ -13,6 +16,7 @@ import com.foodgest.perfiles.compradores.dtos.CompradorCreateDto;
 import com.foodgest.perfiles.compradores.entities.Comprador;
 import com.foodgest.perfiles.compradores.repositories.CompradorRepository;
 import com.foodgest.shared.exceptions.BusinessException;
+import com.foodgest.shared.external.IEmailService;
 import com.foodgest.users.entities.UserEntities;
 import com.foodgest.users.enums.TipoUsuarioEnum;
 import com.foodgest.users.repositories.UserRepository;
@@ -20,12 +24,16 @@ import jakarta.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements IAuthService {
@@ -54,6 +62,15 @@ public class AuthServiceImpl implements IAuthService {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
+    private IEmailService emailService;
+
+    @Value("${jwt.refresh-expiration-ms:604800000}")
+    private long refreshExpirationMs;
 
     @Override
     @Transactional
@@ -124,9 +141,13 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         // La wallet se crea automaticamente en PostgreSQL (trigger trg_crear_wallet).
+        try {
+            emailService.enviarCorreoConfirmacion(usuario.getEmail(), usuario.getNombre());
+        } catch (RuntimeException ex) {
+            log.warn("No se pudo enviar el correo de registro a {}: {}", usuario.getEmail(), ex.getMessage());
+        }
 
-        String token = jwtTokenProvider.generateToken(usuario);
-        return AuthTokenResponseDto.of(token, usuario);
+        return AuthTokenResponseDto.pending(usuario);
     }
 
     @Override
@@ -143,7 +164,7 @@ public class AuthServiceImpl implements IAuthService {
                     HttpStatus.UNAUTHORIZED);
         }
 
-        if ("inactivo".equals(usuario.getEstado()) || "suspendido".equals(usuario.getEstado())) {
+        if (!"activo".equals(usuario.getEstado())) {
             throw new BusinessException(
                     "Cuenta " + usuario.getEstado() + ". Contacte al administrador.",
                     HttpStatus.FORBIDDEN);
@@ -153,7 +174,51 @@ public class AuthServiceImpl implements IAuthService {
         userRepository.save(usuario);
 
         String token = jwtTokenProvider.generateToken(usuario);
-        return AuthTokenResponseDto.of(token, usuario);
+        String refreshToken = createRefreshToken(usuario).getToken();
+        return AuthTokenResponseDto.of(token, refreshToken, usuario);
+    }
+
+    @Override
+    @Transactional
+    public AuthTokenResponseDto refresh(RefreshTokenDto dto) {
+        RefreshToken storedToken = refreshTokenRepository.findByToken(dto.getRefreshToken())
+                .orElseThrow(() -> new BusinessException("Refresh token invalido", HttpStatus.UNAUTHORIZED));
+
+        if (Boolean.TRUE.equals(storedToken.getRevoked())
+                || storedToken.getExpiresAt().isBefore(OffsetDateTime.now())) {
+            throw new BusinessException("Refresh token expirado o revocado", HttpStatus.UNAUTHORIZED);
+        }
+
+        UserEntities usuario = storedToken.getUsuario();
+        if (!"activo".equals(usuario.getEstado())) {
+            throw new BusinessException("Cuenta " + usuario.getEstado() + ". Contacte al administrador.", HttpStatus.FORBIDDEN);
+        }
+
+        storedToken.setRevoked(true);
+        refreshTokenRepository.save(storedToken);
+
+        String token = jwtTokenProvider.generateToken(usuario);
+        String refreshToken = createRefreshToken(usuario).getToken();
+        return AuthTokenResponseDto.of(token, refreshToken, usuario);
+    }
+
+    @Override
+    @Transactional
+    public void logout(RefreshTokenDto dto) {
+        refreshTokenRepository.findByToken(dto.getRefreshToken()).ifPresent(refreshToken -> {
+            refreshToken.setRevoked(true);
+            refreshTokenRepository.save(refreshToken);
+        });
+    }
+
+    private RefreshToken createRefreshToken(UserEntities usuario) {
+        refreshTokenRepository.revokeActiveTokensByUsuarioId(usuario.getId());
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setUsuario(usuario);
+        refreshToken.setToken(UUID.randomUUID().toString());
+        refreshToken.setExpiresAt(OffsetDateTime.now().plus(refreshExpirationMs, ChronoUnit.MILLIS));
+        refreshToken.setRevoked(false);
+        return refreshTokenRepository.save(refreshToken);
     }
 
     private <T> T convertPerfil(java.util.Map<String, Object> perfil, Class<T> targetClass) {
