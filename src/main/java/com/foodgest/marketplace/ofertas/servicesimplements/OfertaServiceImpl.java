@@ -1,10 +1,12 @@
 package com.foodgest.marketplace.ofertas.servicesimplements;
 
+import com.foodgest.marketplace.ofertas.dtos.OfertaEventDto;
 import com.foodgest.marketplace.ofertas.dtos.OfertaMapaResponseDto;
 import com.foodgest.marketplace.ofertas.entities.Oferta;
 import com.foodgest.marketplace.ofertas.repositories.OfertaRepository;
 import com.foodgest.marketplace.ofertas.servicesinterfaces.IOfertaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,8 +19,13 @@ import java.util.stream.Collectors;
 @Service
 public class OfertaServiceImpl implements IOfertaService {
 
+    private static final String TOPIC_OFERTAS = "/topic/ofertas";
+
     @Autowired
     private OfertaRepository ofertaRepository;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @Override
     @Transactional(readOnly = true)
@@ -58,6 +65,7 @@ public class OfertaServiceImpl implements IOfertaService {
     public void insert(Oferta oferta) {
         Oferta saved = ofertaRepository.save(oferta);
         ofertaRepository.sincronizarUbicacionOferta(saved.getId());
+        messagingTemplate.convertAndSend(TOPIC_OFERTAS, OfertaEventDto.of("creada", saved));
     }
 
     @Override
@@ -65,11 +73,15 @@ public class OfertaServiceImpl implements IOfertaService {
     public void update(Oferta oferta) {
         Oferta saved = ofertaRepository.save(oferta);
         ofertaRepository.sincronizarUbicacionOferta(saved.getId());
+        messagingTemplate.convertAndSend(TOPIC_OFERTAS, OfertaEventDto.of("actualizada", saved));
     }
 
     @Override
     @Transactional
-    public void delete(UUID id) { ofertaRepository.deleteById(id); }
+    public void delete(UUID id) {
+        ofertaRepository.deleteById(id);
+        messagingTemplate.convertAndSend(TOPIC_OFERTAS, OfertaEventDto.eliminada(id));
+    }
 
     @Override
     @Transactional

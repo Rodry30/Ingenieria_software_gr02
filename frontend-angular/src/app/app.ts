@@ -1,6 +1,8 @@
-import { AfterViewInit, Component, ElementRef, signal, viewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 // IconDefault._getIconUrl antepone un "imagePath" autodetectado desde el CSS
 // (que el bundler de Angular resuelve a /media/...), ignorando las URLs de
@@ -13,6 +15,7 @@ L.Icon.Default.mergeOptions({
 });
 
 interface OfertaMapa {
+  id?: string;
   productoNombre?: string;
   nombreFinca?: string;
   agricultorNombre?: string;
@@ -21,6 +24,11 @@ interface OfertaMapa {
   distanciaKm?: number;
   latitud?: number;
   longitud?: number;
+  estado?: string;
+}
+
+interface OfertaEvento extends OfertaMapa {
+  tipoEvento: 'creada' | 'actualizada' | 'eliminada';
 }
 
 @Component({
@@ -29,7 +37,7 @@ interface OfertaMapa {
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App implements AfterViewInit {
+export class App implements AfterViewInit, OnDestroy {
   private readonly mapContainer = viewChild.required<ElementRef<HTMLDivElement>>('mapContainer');
 
   apiBase = signal('http://localhost:8080');
@@ -43,11 +51,14 @@ export class App implements AfterViewInit {
   token: string | null = null;
   backendOk = signal<boolean | null>(null);
   authOk = signal(false);
+  wsOk = signal<boolean | null>(null);
   logLines = signal('Listo. Prueba la conexión o carga los datos de ejemplo para verificar que el mapa pinta correctamente.');
 
   private map!: L.Map;
   private searchMarker: L.CircleMarker | null = null;
-  private ofertaMarkers: L.Marker[] = [];
+  private searchPoint: { lat: number; lng: number } | null = null;
+  private ofertaMarkers = new Map<string, L.Marker>();
+  private stompClient: Client | null = null;
 
   ngAfterViewInit(): void {
     this.map = L.map(this.mapContainer().nativeElement).setView([-12.0464, -77.0428], 6);
@@ -61,6 +72,10 @@ export class App implements AfterViewInit {
       this.lng.set(e.latlng.lng.toFixed(6));
       this.log(`Punto seleccionado en el mapa: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`);
     });
+  }
+
+  ngOnDestroy(): void {
+    this.desconectarWs();
   }
 
   private log(message: string, obj?: unknown): void {
@@ -146,12 +161,78 @@ export class App implements AfterViewInit {
     this.log('Datos de ejemplo cargados (no requieren backend)', demo);
   }
 
+  conectarWs(): void {
+    const base = this.apiBase().replace(/\/$/, '');
+    this.stompClient = new Client({
+      webSocketFactory: () => new SockJS(`${base}/ws`) as unknown as WebSocket,
+      onConnect: () => {
+        this.wsOk.set(true);
+        this.log('WebSocket conectado a /topic/ofertas');
+        this.stompClient!.subscribe('/topic/ofertas', (frame) => {
+          this.manejarEventoOferta(JSON.parse(frame.body));
+        });
+      },
+      onStompError: (frame) => {
+        this.wsOk.set(false);
+        this.log('Error de WebSocket (STOMP): ' + frame.headers['message']);
+      },
+      onWebSocketError: (err) => {
+        this.wsOk.set(false);
+        this.log('Error de WebSocket: ' + err);
+      },
+    });
+    this.stompClient.activate();
+  }
+
+  desconectarWs(): void {
+    this.stompClient?.deactivate();
+    this.stompClient = null;
+    this.wsOk.set(false);
+  }
+
+  private manejarEventoOferta(o: OfertaEvento): void {
+    this.log(`Evento en vivo: oferta ${o.tipoEvento}`, o);
+
+    if (o.tipoEvento === 'eliminada' || o.estado !== 'activa') {
+      const existente = o.id ? this.ofertaMarkers.get(o.id) : undefined;
+      if (existente) {
+        this.map.removeLayer(existente);
+        this.ofertaMarkers.delete(o.id!);
+      }
+      return;
+    }
+    if (o.latitud == null || o.longitud == null || !o.id) return;
+
+    if (this.searchPoint) {
+      const radioKm = parseFloat(this.radio() || '50');
+      const d = this.distanciaHaversineKm(this.searchPoint.lat, this.searchPoint.lng, o.latitud, o.longitud);
+      if (d > radioKm) return; // fuera del radio de la ultima busqueda
+    }
+
+    const existente = this.ofertaMarkers.get(o.id);
+    if (existente) this.map.removeLayer(existente);
+    const marker = L.marker([o.latitud, o.longitud]).addTo(this.map);
+    marker.bindPopup(this.popupOferta(o, 'actualizado en vivo'));
+    this.ofertaMarkers.set(o.id, marker);
+  }
+
+  private distanciaHaversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
   private limpiarMarkers(): void {
     this.ofertaMarkers.forEach((m) => this.map.removeLayer(m));
-    this.ofertaMarkers = [];
+    this.ofertaMarkers.clear();
   }
 
   private pintarPuntoBusqueda(lat: number, lng: number): void {
+    this.searchPoint = { lat, lng };
     if (this.searchMarker) this.map.removeLayer(this.searchMarker);
     this.searchMarker = L.circleMarker([lat, lng], { radius: 8, color: '#1976d2', fillColor: '#1976d2', fillOpacity: 0.9 })
       .addTo(this.map)
@@ -159,23 +240,28 @@ export class App implements AfterViewInit {
     this.map.setView([lat, lng], 8);
   }
 
-  private pintarOfertas(ofertas: OfertaMapa[]): void {
-    this.limpiarMarkers();
-    ofertas.forEach((o) => {
-      if (o.latitud == null || o.longitud == null) return;
-      const marker = L.marker([o.latitud, o.longitud]).addTo(this.map);
-      const distancia = o.distanciaKm != null ? `${o.distanciaKm.toFixed(1)} km` : 'N/D';
-      marker.bindPopup(`
+  private popupOferta(o: OfertaMapa, extra?: string): string {
+    const distancia = o.distanciaKm != null ? `${o.distanciaKm.toFixed(1)} km` : 'N/D';
+    return `
         <b>${o.productoNombre || 'Producto'}</b><br>
         Finca: ${o.nombreFinca || '-'}<br>
         Agricultor: ${o.agricultorNombre || '-'}<br>
         Precio: ${o.precioSugerido ?? '-'} ${o.moneda || ''}<br>
         Distancia: ${distancia}
-      `);
-      this.ofertaMarkers.push(marker);
+        ${extra ? '<br><i>' + extra + '</i>' : ''}
+      `;
+  }
+
+  private pintarOfertas(ofertas: OfertaMapa[]): void {
+    this.limpiarMarkers();
+    ofertas.forEach((o, i) => {
+      if (o.latitud == null || o.longitud == null) return;
+      const marker = L.marker([o.latitud, o.longitud]).addTo(this.map);
+      marker.bindPopup(this.popupOferta(o));
+      this.ofertaMarkers.set(o.id || `demo-${i}`, marker);
     });
     if (ofertas.length) {
-      const group = L.featureGroup(this.searchMarker ? [...this.ofertaMarkers, this.searchMarker] : this.ofertaMarkers);
+      const group = L.featureGroup(this.searchMarker ? [...this.ofertaMarkers.values(), this.searchMarker] : [...this.ofertaMarkers.values()]);
       this.map.fitBounds(group.getBounds().pad(0.2));
     }
   }

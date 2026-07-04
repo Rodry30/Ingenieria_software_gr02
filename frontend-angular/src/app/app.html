@@ -54,6 +54,21 @@
     <button class="secondary" (click)="cargarDemo()">Cargar datos de ejemplo (sin backend)</button>
   </fieldset>
 
+  <h2>4. Mapa en vivo (WebSocket)</h2>
+  <fieldset>
+    <legend>/topic/ofertas</legend>
+    <button (click)="conectarWs()">Conectar</button>
+    <button class="secondary" (click)="desconectarWs()">Desconectar</button>
+    @if (wsOk() === true) {
+      <div class="pill ok">conectado</div>
+    } @else if (wsOk() === false) {
+      <div class="pill bad">desconectado</div>
+    } @else {
+      <div class="pill">sin conectar</div>
+    }
+    <div class="hint">Con la búsqueda ya hecha, crea/edita/borra una oferta en otra pestaña y el marcador se actualiza solo.</div>
+  </fieldset>
+
   <h2>Estado / Respuesta</h2>
   <div id="status">{{ logLines() }}</div>
 </div>

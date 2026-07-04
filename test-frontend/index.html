@@ -79,6 +79,15 @@
     <button class="secondary" onclick="cargarDemo()">Cargar datos de ejemplo (sin backend)</button>
   </fieldset>
 
+  <h2>4. Mapa en vivo (WebSocket)</h2>
+  <fieldset>
+    <legend>/topic/ofertas</legend>
+    <button onclick="conectarWs()">Conectar</button>
+    <button class="secondary" onclick="desconectarWs()">Desconectar</button>
+    <div id="wsPill" class="pill">desconectado</div>
+    <div class="hint">Con la búsqueda ya hecha, crea/edita/borra una oferta en otra pestaña y el marcador se actualiza solo, sin volver a buscar.</div>
+  </fieldset>
+
   <h2>Estado / Respuesta</h2>
   <div id="status">Listo. Prueba la conexión o carga los datos de ejemplo para verificar que el mapa pinta correctamente.</div>
 </div>
@@ -86,10 +95,14 @@
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 <script>
 let token = null;
 let searchMarker = null;
-let ofertaMarkers = [];
+let searchPoint = null; // {lat, lng} del ultimo punto buscado
+let ofertaMarkers = new Map(); // ofertaId -> L.Marker
+let stompClient = null;
 
 const map = L.map('map').setView([-12.0464, -77.0428], 6);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -178,10 +191,11 @@ async function buscarOfertas() {
 
 function limpiarMarkers() {
   ofertaMarkers.forEach(m => map.removeLayer(m));
-  ofertaMarkers = [];
+  ofertaMarkers.clear();
 }
 
 function pintarPuntoBusqueda(lat, lng) {
+  searchPoint = { lat: parseFloat(lat), lng: parseFloat(lng) };
   if (searchMarker) map.removeLayer(searchMarker);
   searchMarker = L.circleMarker([lat, lng], { radius: 8, color: '#1976d2', fillColor: '#1976d2', fillOpacity: 0.9 })
     .addTo(map)
@@ -189,25 +203,85 @@ function pintarPuntoBusqueda(lat, lng) {
   map.setView([lat, lng], 8);
 }
 
+function popupOferta(o, extra) {
+  const distancia = o.distanciaKm != null ? `${o.distanciaKm.toFixed(1)} km` : 'N/D';
+  return `
+    <b>${o.productoNombre || 'Producto'}</b><br>
+    Finca: ${o.nombreFinca || '-'}<br>
+    Agricultor: ${o.agricultorNombre || '-'}<br>
+    Precio: ${o.precioSugerido ?? '-'} ${o.moneda || ''}<br>
+    Distancia: ${distancia}
+    ${extra ? '<br><i>' + extra + '</i>' : ''}
+  `;
+}
+
 function pintarOfertas(ofertas) {
   limpiarMarkers();
-  ofertas.forEach(o => {
+  ofertas.forEach((o, i) => {
     if (o.latitud == null || o.longitud == null) return;
     const marker = L.marker([o.latitud, o.longitud]).addTo(map);
-    const distancia = o.distanciaKm != null ? `${o.distanciaKm.toFixed(1)} km` : 'N/D';
-    marker.bindPopup(`
-      <b>${o.productoNombre || 'Producto'}</b><br>
-      Finca: ${o.nombreFinca || '-'}<br>
-      Agricultor: ${o.agricultorNombre || '-'}<br>
-      Precio: ${o.precioSugerido ?? '-'} ${o.moneda || ''}<br>
-      Distancia: ${distancia}
-    `);
-    ofertaMarkers.push(marker);
+    marker.bindPopup(popupOferta(o));
+    ofertaMarkers.set(o.id || `demo-${i}`, marker);
   });
   if (ofertas.length) {
-    const group = new L.featureGroup(ofertaMarkers.concat(searchMarker ? [searchMarker] : []));
+    const group = new L.featureGroup(Array.from(ofertaMarkers.values()).concat(searchMarker ? [searchMarker] : []));
     map.fitBounds(group.getBounds().pad(0.2));
   }
+}
+
+function distanciaHaversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function manejarEventoOferta(o) {
+  log(`Evento en vivo: oferta ${o.tipoEvento}`, o);
+
+  if (o.tipoEvento === 'eliminada' || o.estado !== 'activa') {
+    const existente = ofertaMarkers.get(o.id);
+    if (existente) { map.removeLayer(existente); ofertaMarkers.delete(o.id); }
+    return;
+  }
+  if (o.latitud == null || o.longitud == null) return;
+
+  if (searchPoint) {
+    const radioKm = parseFloat(document.getElementById('radio').value || '50');
+    const d = distanciaHaversineKm(searchPoint.lat, searchPoint.lng, o.latitud, o.longitud);
+    if (d > radioKm) return; // fuera del radio de la ultima busqueda, se ignora
+  }
+
+  const existente = ofertaMarkers.get(o.id);
+  if (existente) map.removeLayer(existente);
+  const marker = L.marker([o.latitud, o.longitud]).addTo(map);
+  marker.bindPopup(popupOferta(o, 'actualizado en vivo'));
+  ofertaMarkers.set(o.id, marker);
+}
+
+function conectarWs() {
+  const socket = new SockJS(apiBase() + '/ws');
+  stompClient = Stomp.over(socket);
+  stompClient.debug = null;
+  stompClient.connect({}, () => {
+    setPill('wsPill', true, 'conectado');
+    log('WebSocket conectado a /topic/ofertas');
+    stompClient.subscribe('/topic/ofertas', (frame) => {
+      manejarEventoOferta(JSON.parse(frame.body));
+    });
+  }, (err) => {
+    setPill('wsPill', false, 'error de conexión');
+    log('Error de WebSocket: ' + err);
+  });
+}
+
+function desconectarWs() {
+  if (stompClient) {
+    stompClient.disconnect(() => log('WebSocket desconectado'));
+    stompClient = null;
+  }
+  setPill('wsPill', false, 'desconectado');
 }
 
 function cargarDemo() {
