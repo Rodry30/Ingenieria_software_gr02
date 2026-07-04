@@ -30,6 +30,9 @@ public class TransaccionController {
     }
 
     @GetMapping("/{pedidoId}/transacciones")
+    @PreAuthorize("hasRole('ADMIN')"
+            + " or authentication.name == @pedidoRepository.findById(#pedidoId).orElseThrow().comprador.usuario.email"
+            + " or authentication.name == @pedidoRepository.findById(#pedidoId).orElseThrow().oferta.agricultor.usuario.email")
     public ResponseEntity<List<TransaccionResponseDto>> listByPedido(@PathVariable UUID pedidoId) {
         return ResponseEntity.ok(transaccionService.listByPedido(pedidoId));
     }

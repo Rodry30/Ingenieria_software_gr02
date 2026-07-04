@@ -5,6 +5,7 @@ import com.foodgest.perfiles.agricultores.repositories.AgricultorRepository;
 import com.foodgest.perfiles.agricultores.servicesinterfaces.IAgricultorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,11 +18,14 @@ public class AgricultorServiceImpl implements IAgricultorService {
     private AgricultorRepository agricultorRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<Agricultor> list() { return agricultorRepository.findAll(); }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Agricultor> listId(UUID id) { return agricultorRepository.findById(id); }
     @Override
+    @Transactional(readOnly = true)
     public Optional<Agricultor> findByUsuarioId(UUID usuarioId) { return agricultorRepository.findByUsuarioId(usuarioId); }
 
     @Override

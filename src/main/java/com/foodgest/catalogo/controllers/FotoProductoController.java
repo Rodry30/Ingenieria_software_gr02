@@ -3,6 +3,7 @@ package com.foodgest.catalogo.controllers;
 import com.foodgest.catalogo.dtos.FotoProductoDto;
 import com.foodgest.catalogo.servicesinterfaces.IFotoProductoService;
 import com.foodgest.catalogo.servicesinterfaces.IProductoService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,7 +39,7 @@ public class FotoProductoController {
     }
 
     @PostMapping
-    public ResponseEntity<FotoProductoDto> insert(@RequestBody FotoProductoDto dto) {
+    public ResponseEntity<FotoProductoDto> insert(@Valid @RequestBody FotoProductoDto dto) {
         return productoService.listId(dto.getProductoId()).map(producto -> {
             var foto = dto.toEntity(producto);
             var saved = fotoProductoService.insert(foto);

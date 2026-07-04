@@ -7,6 +7,7 @@ import com.foodgest.perfiles.agricultores.entities.Agricultor;
 import com.foodgest.perfiles.agricultores.servicesinterfaces.IAgricultorService;
 import com.foodgest.users.entities.UserEntities;
 import com.foodgest.users.repositories.UserRepository;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,7 +54,7 @@ public class AgricultorController {
 
     /** POST /api/perfiles/agricultores */
     @PostMapping
-    public ResponseEntity<?> insert(@RequestBody AgricultorCreateDto dto) {
+    public ResponseEntity<?> insert(@Valid @RequestBody AgricultorCreateDto dto) {
         if (dto.getUsuarioId() == null) {
             return ResponseEntity.badRequest().body("El campo usuarioId es obligatorio.");
         }
@@ -69,7 +70,7 @@ public class AgricultorController {
     /** PUT /api/perfiles/agricultores/{id} */
     @PutMapping("/{id}")
     public ResponseEntity<AgricultorResponseDto> update(@PathVariable UUID id,
-                                                        @RequestBody AgricultorUpdateDto dto) {
+                                                        @Valid @RequestBody AgricultorUpdateDto dto) {
         return agricultorService.listId(id).map(existing -> {
             if (dto.getNombreFinca() != null)          existing.setNombreFinca(dto.getNombreFinca());
             if (dto.getHectareas() != null)            existing.setHectareas(dto.getHectareas());

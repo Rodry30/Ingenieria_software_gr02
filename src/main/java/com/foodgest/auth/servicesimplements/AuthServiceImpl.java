@@ -72,6 +72,12 @@ public class AuthServiceImpl implements IAuthService {
     @Value("${jwt.refresh-expiration-ms:604800000}")
     private long refreshExpirationMs;
 
+    // SOLO PARA DEMOS: activa la cuenta al registrarse en vez de dejarla en
+    // 'pendiente', para no depender de un flujo de aprobacion manual frente al
+    // publico. Apagado por defecto; se enciende con DEMO_AUTO_ACTIVAR=true.
+    @Value("${foodgest.demo.auto-activar-registro:false}")
+    private boolean autoActivarRegistro;
+
     @Override
     @Transactional
     public AuthTokenResponseDto register(RegisterRequestDto dto) {
@@ -98,10 +104,17 @@ public class AuthServiceImpl implements IAuthService {
         // Regla 2: hash BCrypt strength 12
         usuario.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
         usuario.setTelefono(dto.getTelefono());
-        // Regla 3: estado = 'pendiente', verificado = false
         usuario.setTipoUsuario(dto.getTipoUsuario().name());
-        usuario.setEstado("pendiente");
-        usuario.setVerificado(false);
+        if (autoActivarRegistro) {
+            // Modo demo: sin esto, cualquier cuenta creada en vivo queda
+            // 'pendiente' y no puede loguearse sin una aprobacion manual.
+            usuario.setEstado("activo");
+            usuario.setVerificado(true);
+        } else {
+            // Regla 3: estado = 'pendiente', verificado = false
+            usuario.setEstado("pendiente");
+            usuario.setVerificado(false);
+        }
 
         userRepository.save(usuario);
 
@@ -147,6 +160,11 @@ public class AuthServiceImpl implements IAuthService {
             log.warn("No se pudo enviar el correo de registro a {}: {}", usuario.getEmail(), ex.getMessage());
         }
 
+        if (autoActivarRegistro) {
+            String token = jwtTokenProvider.generateToken(usuario);
+            String refreshToken = createRefreshToken(usuario).getToken();
+            return AuthTokenResponseDto.of(token, refreshToken, usuario);
+        }
         return AuthTokenResponseDto.pending(usuario);
     }
 

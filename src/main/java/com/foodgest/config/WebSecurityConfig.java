@@ -60,7 +60,15 @@ public class WebSecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
-                                "/error"
+                                "/error",
+                                // Culqi llama este endpoint sin JWT (es un servidor externo);
+                                // la autenticacion la da la firma HMAC verificada en el propio
+                                // metodo (fail-closed si falta el secreto o la firma).
+                                "/api/pedidos/transacciones/webhook-pagos",
+                                // Handshake SockJS/STOMP: el header Authorization no viaja en el
+                                // GET inicial del handshake. El topic /topic/ofertas solo emite
+                                // el mismo tipo de datos de mapa que ya se ve en /marketplace/ofertas.
+                                "/ws/**"
                         ).permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider)

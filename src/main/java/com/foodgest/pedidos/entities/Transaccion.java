@@ -1,6 +1,7 @@
 package com.foodgest.pedidos.entities;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -44,6 +45,7 @@ public class Transaccion {
     private String descripcion;
 
     @Column(name = "metadata", columnDefinition = "JSONB")
+    @ColumnTransformer(write = "?::jsonb")
     private String metadata = "{}";
 
     @CreationTimestamp

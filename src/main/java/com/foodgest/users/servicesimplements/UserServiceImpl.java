@@ -7,6 +7,7 @@ import com.foodgest.users.entities.UserEntities;
 import com.foodgest.users.repositories.UserRepository;
 import com.foodgest.users.servicesinterfaces.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,8 +75,12 @@ public class UserServiceImpl implements IUserService {
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         }
-        user.setTipoUsuario(request.getTipoUsuario());
-        user.setEstado(request.getEstado());
+        // tipoUsuario y estado solo los puede modificar un ADMIN: de lo contrario
+        // cualquier usuario autenticado podria auto-ascenderse editando su propio perfil.
+        if (isAdmin()) {
+            user.setTipoUsuario(request.getTipoUsuario());
+            user.setEstado(request.getEstado());
+        }
         user.setTelefono(request.getTelefono());
         user.setDireccion(request.getDireccion());
         user.setCiudad(request.getCiudad());
@@ -94,6 +99,12 @@ public class UserServiceImpl implements IUserService {
         userRepository.deleteById(id);
     }
 
+
+    private boolean isAdmin() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+    }
 
     private UserResponse toResponse(UserEntities user) {
         UserResponse response = new UserResponse();

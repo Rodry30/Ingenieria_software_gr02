@@ -15,13 +15,22 @@ import java.util.UUID;
 @Repository
 public interface OfertaRepository extends JpaRepository<Oferta, UUID> {
 
-    List<Oferta> findByAgricultorId(UUID agricultorId);
+    // JOIN FETCH sobre producto evita el N+1 que disparaba OfertaResponseDto.from()
+    // (accede a producto.getNombre(), no solo al id) al mapear listas completas.
+    @Override
+    @Query("SELECT o FROM Oferta o JOIN FETCH o.producto")
+    List<Oferta> findAll();
+
+    @Query("SELECT o FROM Oferta o JOIN FETCH o.producto WHERE o.agricultor.id = :agricultorId")
+    List<Oferta> findByAgricultorId(@Param("agricultorId") UUID agricultorId);
 
     List<Oferta> findByProductoId(UUID productoId);
 
-    List<Oferta> findByEstado(String estado);
+    @Query("SELECT o FROM Oferta o JOIN FETCH o.producto WHERE o.estado = :estado")
+    List<Oferta> findByEstado(@Param("estado") String estado);
 
-    List<Oferta> findByAgricultorIdAndEstado(UUID agricultorId, String estado);
+    @Query("SELECT o FROM Oferta o JOIN FETCH o.producto WHERE o.agricultor.id = :agricultorId AND o.estado = :estado")
+    List<Oferta> findByAgricultorIdAndEstado(@Param("agricultorId") UUID agricultorId, @Param("estado") String estado);
 
     @Query(value = """
             SELECT

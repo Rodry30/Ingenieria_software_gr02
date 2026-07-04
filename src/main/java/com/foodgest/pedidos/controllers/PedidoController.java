@@ -37,11 +37,15 @@ public class PedidoController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')"
+            + " or authentication.name == @pedidoRepository.findById(#id).orElseThrow().comprador.usuario.email"
+            + " or authentication.name == @pedidoRepository.findById(#id).orElseThrow().oferta.agricultor.usuario.email")
     public ResponseEntity<PedidoResponseDto> listId(@PathVariable UUID id) {
         return ResponseEntity.ok(pedidoService.listId(id));
     }
 
     @GetMapping("/comprador/{compradorId}")
+    @PreAuthorize("hasRole('ADMIN') or authentication.name == @compradorRepository.findById(#compradorId).orElseThrow().usuario.email")
     public ResponseEntity<List<PedidoResponseDto>> listByComprador(@PathVariable UUID compradorId) {
         return ResponseEntity.ok(pedidoService.listByComprador(compradorId));
     }

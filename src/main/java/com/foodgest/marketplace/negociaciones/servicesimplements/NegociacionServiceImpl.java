@@ -18,22 +18,27 @@ public class NegociacionServiceImpl implements INegociacionService {
     private NegociacionRepository negociacionRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<Negociacion> list() { return negociacionRepository.findAll(); }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Negociacion> listId(UUID id) { return negociacionRepository.findById(id); }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Negociacion> listByOferta(UUID ofertaId) {
         return negociacionRepository.findByOfertaId(ofertaId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Negociacion> listByComprador(UUID compradorId) {
         return negociacionRepository.findByCompradorId(compradorId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Negociacion> listByEstado(String estado) {
         return negociacionRepository.findByEstado(estado);
     }

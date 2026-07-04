@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodGest - Prueba de Mapa</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root { font-family: system-ui, Arial, sans-serif; }
+  body { margin: 0; display: flex; height: 100vh; }
+  #panel {
+    width: 340px;
+    flex-shrink: 0;
+    padding: 16px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    background: #f4f6f5;
+    border-right: 1px solid #ddd;
+  }
+  #map { flex: 1; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  h2 { font-size: 13px; text-transform: uppercase; color: #556; margin: 18px 0 6px; }
+  fieldset { border: 1px solid #cfd6d2; border-radius: 8px; margin: 0 0 12px; padding: 10px; }
+  legend { font-size: 12px; color: #556; padding: 0 4px; }
+  label { display: block; font-size: 12px; margin: 6px 0 2px; color: #333; }
+  input, select { width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 13px; border: 1px solid #ccc; border-radius: 6px; }
+  button {
+    width: 100%; margin-top: 8px; padding: 8px; font-size: 13px; font-weight: 600;
+    border: none; border-radius: 6px; background: #2e7d32; color: white; cursor: pointer;
+  }
+  button.secondary { background: #607d8b; }
+  button:hover { filter: brightness(1.1); }
+  #status { font-size: 12px; white-space: pre-wrap; background: #10151a; color: #b6f0c0; padding: 8px; border-radius: 6px; max-height: 220px; overflow: auto; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; margin-top: 4px; }
+  .pill.ok { background: #d7f5db; color: #1b5e20; }
+  .pill.bad { background: #fdd; color: #a00; }
+  .hint { font-size: 11px; color: #778; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <h1>🗺️ FoodGest — Prueba de Mapa</h1>
+  <div class="hint">Frontend mínimo para verificar el endpoint <code>/api/marketplace/ofertas/mapa</code> (PostGIS) sobre un mapa Leaflet/OpenStreetMap.</div>
+
+  <h2>1. Backend</h2>
+  <fieldset>
+    <legend>Conexión</legend>
+    <label for="apiBase">URL base de la API</label>
+    <input id="apiBase" value="http://localhost:8080" />
+    <button class="secondary" onclick="checkBackend()">Probar conexión</button>
+    <div id="backendPill" class="pill">sin probar</div>
+  </fieldset>
+
+  <h2>2. Sesión (JWT)</h2>
+  <fieldset>
+    <legend>Login</legend>
+    <label for="email">Email</label>
+    <input id="email" type="email" placeholder="usuario@correo.com" />
+    <label for="password">Contraseña</label>
+    <input id="password" type="password" />
+    <button onclick="login()">Iniciar sesión</button>
+    <div id="authPill" class="pill">sin sesión</div>
+    <div class="hint">También puedes pegar un token existente:</div>
+    <input id="tokenManual" placeholder="pegar JWT manualmente" oninput="setToken(this.value)" />
+  </fieldset>
+
+  <h2>3. Buscar ofertas cerca de un punto</h2>
+  <fieldset>
+    <legend>Consulta geoespacial</legend>
+    <label for="lat">Latitud</label>
+    <input id="lat" value="-12.0464" />
+    <label for="lng">Longitud</label>
+    <input id="lng" value="-77.0428" />
+    <label for="radio">Radio (km)</label>
+    <input id="radio" value="50" />
+    <div class="hint">Tip: haz clic en el mapa para fijar el punto de búsqueda.</div>
+    <button onclick="buscarOfertas()">Buscar ofertas en el mapa</button>
+    <button class="secondary" onclick="cargarDemo()">Cargar datos de ejemplo (sin backend)</button>
+  </fieldset>
+
+  <h2>4. Mapa en vivo (WebSocket)</h2>
+  <fieldset>
+    <legend>/topic/ofertas</legend>
+    <button onclick="conectarWs()">Conectar</button>
+    <button class="secondary" onclick="desconectarWs()">Desconectar</button>
+    <div id="wsPill" class="pill">desconectado</div>
+    <div class="hint">Con la búsqueda ya hecha, crea/edita/borra una oferta en otra pestaña y el marcador se actualiza solo, sin volver a buscar.</div>
+  </fieldset>
+
+  <h2>Estado / Respuesta</h2>
+  <div id="status">Listo. Prueba la conexión o carga los datos de ejemplo para verificar que el mapa pinta correctamente.</div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script>
+let token = null;
+let searchMarker = null;
+let searchPoint = null; // {lat, lng} del ultimo punto buscado
+let ofertaMarkers = new Map(); // ofertaId -> L.Marker
+let stompClient = null;
+
+const map = L.map('map').setView([-12.0464, -77.0428], 6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+function log(message, obj) {
+  const el = document.getElementById('status');
+  const time = new Date().toLocaleTimeString();
+  let line = `[${time}] ${message}`;
+  if (obj !== undefined) line += '\n' + JSON.stringify(obj, null, 2);
+  el.textContent = line + '\n\n' + el.textContent;
+}
+
+function apiBase() {
+  return document.getElementById('apiBase').value.replace(/\/$/, '');
+}
+
+function setPill(id, ok, text) {
+  const el = document.getElementById(id);
+  el.className = 'pill ' + (ok ? 'ok' : 'bad');
+  el.textContent = text;
+}
+
+function setToken(value) {
+  token = value && value.trim() ? value.trim() : null;
+  setPill('authPill', !!token, token ? 'token activo' : 'sin sesión');
+}
+
+async function checkBackend() {
+  try {
+    const res = await fetch(apiBase() + '/v3/api-docs', { method: 'GET' });
+    setPill('backendPill', res.ok, res.ok ? 'backend accesible' : `HTTP ${res.status}`);
+    log('Chequeo de backend', { status: res.status });
+  } catch (err) {
+    setPill('backendPill', false, 'sin conexión');
+    log('Error al conectar con el backend: ' + err.message);
+  }
+}
+
+async function login() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  try {
+    const res = await fetch(apiBase() + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+    const t = data.data ? (data.data.accessToken || data.data.token) : (data.accessToken || data.token);
+    if (!t) throw new Error('La respuesta no trajo ningun token');
+    document.getElementById('tokenManual').value = t;
+    setToken(t);
+    log('Login exitoso', data);
+  } catch (err) {
+    setPill('authPill', false, 'login fallido');
+    log('Error en login: ' + err.message);
+  }
+}
+
+async function buscarOfertas() {
+  const lat = document.getElementById('lat').value;
+  const lng = document.getElementById('lng').value;
+  const radio = document.getElementById('radio').value;
+
+  pintarPuntoBusqueda(lat, lng);
+
+  const headers = {};
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+
+  try {
+    const url = `${apiBase()}/api/marketplace/ofertas/mapa?latitud=${lat}&longitud=${lng}&radioKm=${radio}`;
+    const res = await fetch(url, { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error((data && data.message) || `HTTP ${res.status}`);
+    const ofertas = Array.isArray(data) ? data : (data.data || []);
+    pintarOfertas(ofertas);
+    log(`Ofertas encontradas: ${ofertas.length}`, ofertas);
+  } catch (err) {
+    log('Error al buscar ofertas: ' + err.message);
+  }
+}
+
+function limpiarMarkers() {
+  ofertaMarkers.forEach(m => map.removeLayer(m));
+  ofertaMarkers.clear();
+}
+
+function pintarPuntoBusqueda(lat, lng) {
+  searchPoint = { lat: parseFloat(lat), lng: parseFloat(lng) };
+  if (searchMarker) map.removeLayer(searchMarker);
+  searchMarker = L.circleMarker([lat, lng], { radius: 8, color: '#1976d2', fillColor: '#1976d2', fillOpacity: 0.9 })
+    .addTo(map)
+    .bindPopup('Punto de búsqueda');
+  map.setView([lat, lng], 8);
+}
+
+function popupOferta(o, extra) {
+  const distancia = o.distanciaKm != null ? `${o.distanciaKm.toFixed(1)} km` : 'N/D';
+  return `
+    <b>${o.productoNombre || 'Producto'}</b><br>
+    Finca: ${o.nombreFinca || '-'}<br>
+    Agricultor: ${o.agricultorNombre || '-'}<br>
+    Precio: ${o.precioSugerido ?? '-'} ${o.moneda || ''}<br>
+    Distancia: ${distancia}
+    ${extra ? '<br><i>' + extra + '</i>' : ''}
+  `;
+}
+
+function pintarOfertas(ofertas) {
+  limpiarMarkers();
+  ofertas.forEach((o, i) => {
+    if (o.latitud == null || o.longitud == null) return;
+    const marker = L.marker([o.latitud, o.longitud]).addTo(map);
+    marker.bindPopup(popupOferta(o));
+    ofertaMarkers.set(o.id || `demo-${i}`, marker);
+  });
+  if (ofertas.length) {
+    const group = new L.featureGroup(Array.from(ofertaMarkers.values()).concat(searchMarker ? [searchMarker] : []));
+    map.fitBounds(group.getBounds().pad(0.2));
+  }
+}
+
+function distanciaHaversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function manejarEventoOferta(o) {
+  log(`Evento en vivo: oferta ${o.tipoEvento}`, o);
+
+  if (o.tipoEvento === 'eliminada' || o.estado !== 'activa') {
+    const existente = ofertaMarkers.get(o.id);
+    if (existente) { map.removeLayer(existente); ofertaMarkers.delete(o.id); }
+    return;
+  }
+  if (o.latitud == null || o.longitud == null) return;
+
+  if (searchPoint) {
+    const radioKm = parseFloat(document.getElementById('radio').value || '50');
+    const d = distanciaHaversineKm(searchPoint.lat, searchPoint.lng, o.latitud, o.longitud);
+    if (d > radioKm) return; // fuera del radio de la ultima busqueda, se ignora
+  }
+
+  const existente = ofertaMarkers.get(o.id);
+  if (existente) map.removeLayer(existente);
+  const marker = L.marker([o.latitud, o.longitud]).addTo(map);
+  marker.bindPopup(popupOferta(o, 'actualizado en vivo'));
+  ofertaMarkers.set(o.id, marker);
+}
+
+function conectarWs() {
+  const socket = new SockJS(apiBase() + '/ws');
+  stompClient = Stomp.over(socket);
+  stompClient.debug = null;
+  stompClient.connect({}, () => {
+    setPill('wsPill', true, 'conectado');
+    log('WebSocket conectado a /topic/ofertas');
+    stompClient.subscribe('/topic/ofertas', (frame) => {
+      manejarEventoOferta(JSON.parse(frame.body));
+    });
+  }, (err) => {
+    setPill('wsPill', false, 'error de conexión');
+    log('Error de WebSocket: ' + err);
+  });
+}
+
+function desconectarWs() {
+  if (stompClient) {
+    stompClient.disconnect(() => log('WebSocket desconectado'));
+    stompClient = null;
+  }
+  setPill('wsPill', false, 'desconectado');
+}
+
+function cargarDemo() {
+  const lat = parseFloat(document.getElementById('lat').value);
+  const lng = parseFloat(document.getElementById('lng').value);
+  pintarPuntoBusqueda(lat, lng);
+  const demo = [
+    { latitud: lat + 0.15, longitud: lng + 0.1, productoNombre: 'Papa amarilla', nombreFinca: 'Finca El Sol', agricultorNombre: 'Juan Perez', precioSugerido: 2.5, moneda: 'PEN', distanciaKm: 12.4 },
+    { latitud: lat - 0.2, longitud: lng + 0.25, productoNombre: 'Maiz choclo', nombreFinca: 'Finca Verde', agricultorNombre: 'Maria Lopez', precioSugerido: 3.1, moneda: 'PEN', distanciaKm: 28.9 },
+    { latitud: lat + 0.3, longitud: lng - 0.3, productoNombre: 'Palta Hass', nombreFinca: 'Finca Los Andes', agricultorNombre: 'Carlos Ruiz', precioSugerido: 6.8, moneda: 'PEN', distanciaKm: 41.2 }
+  ];
+  pintarOfertas(demo);
+  log('Datos de ejemplo cargados (no requieren backend)', demo);
+}
+
+map.on('click', (e) => {
+  document.getElementById('lat').value = e.latlng.lat.toFixed(6);
+  document.getElementById('lng').value = e.latlng.lng.toFixed(6);
+  log(`Punto seleccionado en el mapa: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`);
+});
+</script>
+</body>
+</html>
