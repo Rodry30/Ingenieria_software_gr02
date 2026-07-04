@@ -3,6 +3,7 @@ package com.foodgest.catalogo.controllers;
 import com.foodgest.catalogo.dtos.CategoriaCreateDto;
 import com.foodgest.catalogo.dtos.CategoriaResponseDto;
 import com.foodgest.catalogo.servicesinterfaces.ICategoriaService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,14 +37,14 @@ public class CategoriaController {
     }
 
     @PostMapping
-    public ResponseEntity<CategoriaResponseDto> insert(@RequestBody CategoriaCreateDto dto) {
+    public ResponseEntity<CategoriaResponseDto> insert(@Valid @RequestBody CategoriaCreateDto dto) {
         var categoria = dto.toEntity();
         categoriaService.insert(categoria);
         return ResponseEntity.status(HttpStatus.CREATED).body(CategoriaResponseDto.from(categoria));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CategoriaResponseDto> update(@PathVariable UUID id, @RequestBody CategoriaCreateDto dto) {
+    public ResponseEntity<CategoriaResponseDto> update(@PathVariable UUID id, @Valid @RequestBody CategoriaCreateDto dto) {
         return categoriaService.listId(id).map(existing -> {
             dto.applyTo(existing);
             categoriaService.update(existing);

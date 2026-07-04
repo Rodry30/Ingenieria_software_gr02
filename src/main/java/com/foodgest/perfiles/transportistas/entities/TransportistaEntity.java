@@ -2,6 +2,7 @@ package com.foodgest.perfiles.transportistas.entities;
 
 import com.foodgest.users.entities.UserEntities;
 import jakarta.persistence.*;
+import org.hibernate.annotations.ColumnTransformer;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -28,12 +29,14 @@ public class TransportistaEntity {
     private String licenciaConducir;
 
     @Column(name = "tipo_licencia", length = 10)
+    @ColumnTransformer(write = "?::tipo_licencia_enum")
     private String tipoLicencia;
 
     @Column(name = "placa_vehiculo", length = 10)
     private String placaVehiculo;
 
     @Column(name = "tipo_vehiculo", length = 50)
+    @ColumnTransformer(write = "?::tipo_vehiculo_enum")
     private String tipoVehiculo;
 
     @Column(name = "marca_vehiculo", length = 50)

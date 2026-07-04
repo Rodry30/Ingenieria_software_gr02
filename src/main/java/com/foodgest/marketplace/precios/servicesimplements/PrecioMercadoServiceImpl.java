@@ -18,17 +18,21 @@ public class PrecioMercadoServiceImpl implements IPrecioMercadoService {
     private PrecioMercadoRepository precioMercadoRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<PrecioMercado> list() { return precioMercadoRepository.findAll(); }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<PrecioMercado> listId(UUID id) { return precioMercadoRepository.findById(id); }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PrecioMercado> listByProducto(UUID productoId) {
         return precioMercadoRepository.findByProductoId(productoId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PrecioMercado> listByProductoOrdenado(UUID productoId) {
         return precioMercadoRepository.findByProductoIdOrderByFechaPrecioDesc(productoId);
     }

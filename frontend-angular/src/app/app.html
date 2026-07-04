@@ -1,0 +1,61 @@
+<div id="panel">
+  <h1>🗺️ FoodGest — Prueba de Mapa (Angular)</h1>
+  <div class="hint">
+    Frontend Angular mínimo para verificar el endpoint <code>/api/marketplace/ofertas/mapa</code> (PostGIS) sobre un
+    mapa Leaflet/OpenStreetMap.
+  </div>
+
+  <h2>1. Backend</h2>
+  <fieldset>
+    <legend>Conexión</legend>
+    <label for="apiBase">URL base de la API</label>
+    <input id="apiBase" [(ngModel)]="apiBase" name="apiBase" />
+    <button class="secondary" (click)="checkBackend()">Probar conexión</button>
+    @if (backendOk() === true) {
+      <div class="pill ok">backend accesible</div>
+    } @else if (backendOk() === false) {
+      <div class="pill bad">sin conexión</div>
+    } @else {
+      <div class="pill">sin probar</div>
+    }
+  </fieldset>
+
+  <h2>2. Sesión (JWT)</h2>
+  <fieldset>
+    <legend>Login</legend>
+    <label for="email">Email</label>
+    <input id="email" type="email" placeholder="usuario@correo.com" [(ngModel)]="email" name="email" />
+    <label for="password">Contraseña</label>
+    <input id="password" type="password" [(ngModel)]="password" name="password" />
+    <button (click)="login()">Iniciar sesión</button>
+    <div class="pill" [class.ok]="authOk()" [class.bad]="!authOk()">
+      {{ authOk() ? 'token activo' : 'sin sesión' }}
+    </div>
+    <div class="hint">También puedes pegar un token existente:</div>
+    <input
+      placeholder="pegar JWT manualmente"
+      [ngModel]="tokenManual()"
+      (ngModelChange)="onTokenManualInput($event)"
+      name="tokenManual"
+    />
+  </fieldset>
+
+  <h2>3. Buscar ofertas cerca de un punto</h2>
+  <fieldset>
+    <legend>Consulta geoespacial</legend>
+    <label for="lat">Latitud</label>
+    <input id="lat" [(ngModel)]="lat" name="lat" />
+    <label for="lng">Longitud</label>
+    <input id="lng" [(ngModel)]="lng" name="lng" />
+    <label for="radio">Radio (km)</label>
+    <input id="radio" [(ngModel)]="radio" name="radio" />
+    <div class="hint">Tip: haz clic en el mapa para fijar el punto de búsqueda.</div>
+    <button (click)="buscarOfertas()">Buscar ofertas en el mapa</button>
+    <button class="secondary" (click)="cargarDemo()">Cargar datos de ejemplo (sin backend)</button>
+  </fieldset>
+
+  <h2>Estado / Respuesta</h2>
+  <div id="status">{{ logLines() }}</div>
+</div>
+
+<div id="mapContainer" #mapContainer></div>

@@ -86,33 +86,44 @@ public class TransaccionServiceImpl implements ITransaccionService {
     @Override
     @Transactional
     public void procesarWebhookCulqi(String payload, String signature) {
-        if (webhookSecret != null && !webhookSecret.equals("dummy_webhook_secret") && signature != null) {
-            try {
-                javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
-                javax.crypto.spec.SecretKeySpec secretKey = new javax.crypto.spec.SecretKeySpec(webhookSecret.getBytes("UTF-8"), "HmacSHA256");
-                mac.init(secretKey);
-                byte[] hash = mac.doFinal(payload.getBytes("UTF-8"));
-                
-                StringBuilder hexString = new StringBuilder();
-                for (byte b : hash) {
-                    String hex = Integer.toHexString(0xff & b);
-                    if (hex.length() == 1) hexString.append('0');
-                    hexString.append(hex);
-                }
-                String computedSignatureHex = hexString.toString();
-                
-                String computedSignatureB64 = java.util.Base64.getEncoder().encodeToString(hash);
-                
-                boolean match = java.security.MessageDigest.isEqual(computedSignatureHex.getBytes(), signature.getBytes())
-                        || java.security.MessageDigest.isEqual(computedSignatureB64.getBytes(), signature.getBytes());
-                
-                if (!match) {
-                    throw new BusinessException("Firma del webhook de Culqi invalida", HttpStatus.UNAUTHORIZED);
-                }
-            } catch (Exception e) {
-                if (e instanceof BusinessException) throw (BusinessException) e;
-                throw new BusinessException("Error validando firma de webhook: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        // Fail-closed: sin secreto configurado o sin firma, se rechaza el webhook
+        // en vez de procesarlo como si viniera de Culqi. Antes, dejar el secreto
+        // en su valor por defecto (o no mandar firma) se saltaba la verificacion
+        // por completo y cualquiera podia marcar pedidos como pagados.
+        if (webhookSecret == null || webhookSecret.isBlank() || webhookSecret.equals("dummy_webhook_secret")) {
+            throw new BusinessException(
+                    "El webhook de Culqi no esta configurado (falta CULQI_WEBHOOK_SECRET en el servidor)",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        if (signature == null || signature.isBlank()) {
+            throw new BusinessException("Falta la firma x-culqi-signature del webhook", HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+            javax.crypto.spec.SecretKeySpec secretKey = new javax.crypto.spec.SecretKeySpec(webhookSecret.getBytes("UTF-8"), "HmacSHA256");
+            mac.init(secretKey);
+            byte[] hash = mac.doFinal(payload.getBytes("UTF-8"));
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
             }
+            String computedSignatureHex = hexString.toString();
+
+            String computedSignatureB64 = java.util.Base64.getEncoder().encodeToString(hash);
+
+            boolean match = java.security.MessageDigest.isEqual(computedSignatureHex.getBytes(), signature.getBytes())
+                    || java.security.MessageDigest.isEqual(computedSignatureB64.getBytes(), signature.getBytes());
+
+            if (!match) {
+                throw new BusinessException("Firma del webhook de Culqi invalida", HttpStatus.UNAUTHORIZED);
+            }
+        } catch (Exception e) {
+            if (e instanceof BusinessException) throw (BusinessException) e;
+            throw new BusinessException("Error validando firma de webhook: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         try {

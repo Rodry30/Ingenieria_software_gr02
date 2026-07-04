@@ -21,22 +21,27 @@ public class OfertaServiceImpl implements IOfertaService {
     private OfertaRepository ofertaRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<Oferta> list() { return ofertaRepository.findAll(); }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Oferta> listId(UUID id) { return ofertaRepository.findById(id); }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Oferta> listByAgricultor(UUID agricultorId) {
         return ofertaRepository.findByAgricultorId(agricultorId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Oferta> listByEstado(String estado) {
         return ofertaRepository.findByEstado(estado);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Oferta> listByAgricultorAndEstado(UUID agricultorId, String estado) {
         return ofertaRepository.findByAgricultorIdAndEstado(agricultorId, estado);
     }

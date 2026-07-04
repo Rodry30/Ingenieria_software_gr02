@@ -113,7 +113,10 @@ public class Oferta {
     private LocalDate vencimientoCertOrganico;
 
     // ── Metadata ──────────────────────────────────────────────────────────────
+    // fotos_urls es JSONB en Postgres; sin el cast explicito Hibernate 6 envia
+    // el parametro como varchar y Postgres lo rechaza (mismo patron que calidad/estado).
     @Column(name = "fotos_urls", columnDefinition = "JSONB")
+    @ColumnTransformer(write = "?::jsonb")
     private String fotosUrls = "[]";
 
     @Column(name = "vistas")

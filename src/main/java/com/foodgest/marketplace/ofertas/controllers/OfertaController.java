@@ -16,6 +16,8 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -90,11 +92,12 @@ public class OfertaController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    /** POST /api/marketplace/ofertas - Crea nueva oferta */
+    /** POST /api/marketplace/ofertas - Crea nueva oferta (solo el propio agricultor o un admin) */
     @PostMapping
     public ResponseEntity<ApiResponse<OfertaResponseDto>> insert(@Valid @RequestBody OfertaCreateDto dto) {
         Agricultor agricultor = agricultorRepository.findById(dto.getAgricultorId())
                 .orElseThrow(() -> new BusinessException("Agricultor no encontrado", HttpStatus.NOT_FOUND));
+        requireOwnerOrAdmin(agricultor.getUsuario().getEmail());
 
         Producto producto = productoRepository.findById(dto.getProductoId())
                 .orElseThrow(() -> new BusinessException("Producto no encontrado", HttpStatus.NOT_FOUND));
@@ -106,8 +109,9 @@ public class OfertaController {
                 .body(ApiResponse.success(201, "Oferta creada exitosamente.", OfertaResponseDto.from(oferta)));
     }
 
-    /** PUT /api/marketplace/ofertas/{id} - Actualiza campos de la oferta */
+    /** PUT /api/marketplace/ofertas/{id} - Actualiza campos de la oferta (solo el dueno o un admin) */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or authentication.name == @ofertaRepository.findById(#id).orElseThrow().agricultor.usuario.email")
     public ResponseEntity<OfertaResponseDto> update(@PathVariable UUID id,
                                                      @Valid @RequestBody OfertaUpdateDto dto) {
         return ofertaService.listId(id).map(existing -> {
@@ -117,13 +121,23 @@ public class OfertaController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    /** DELETE /api/marketplace/ofertas/{id} - Elimina la oferta */
+    /** DELETE /api/marketplace/ofertas/{id} - Elimina la oferta (solo el dueno o un admin) */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or authentication.name == @ofertaRepository.findById(#id).orElseThrow().agricultor.usuario.email")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         if (ofertaService.listId(id).isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         ofertaService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private void requireOwnerOrAdmin(String ownerEmail) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin && (authentication == null || !authentication.getName().equals(ownerEmail))) {
+            throw new BusinessException("No tiene permisos para operar sobre este agricultor", HttpStatus.FORBIDDEN);
+        }
     }
 }

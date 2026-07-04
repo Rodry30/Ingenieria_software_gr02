@@ -2,6 +2,7 @@ package com.foodgest.comunicaciones.entities;
 
 import com.foodgest.users.entities.UserEntities;
 import jakarta.persistence.*;
+import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
@@ -32,6 +33,7 @@ public class Notificacion {
     private Boolean leido = false;
 
     @Column(name = "data", columnDefinition = "JSONB")
+    @ColumnTransformer(write = "?::jsonb")
     private String data = "{}";
 
     @CreationTimestamp

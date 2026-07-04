@@ -5,6 +5,7 @@ import com.foodgest.catalogo.dtos.ProductoCreateDto;
 import com.foodgest.catalogo.dtos.ProductoResponseDto;
 import com.foodgest.catalogo.servicesinterfaces.ICategoriaService;
 import com.foodgest.catalogo.servicesinterfaces.IProductoService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,7 +55,7 @@ public class ProductoController {
 
     //Insertar producto, 
     @PostMapping
-    public ResponseEntity<ProductoResponseDto> insert(@RequestBody ProductoCreateDto dto) {
+    public ResponseEntity<ProductoResponseDto> insert(@Valid @RequestBody ProductoCreateDto dto) {
         return categoriaService.listId(dto.getCategoriaId()).map(categoria -> {
             var producto = dto.toEntity(categoria);
             var saved = productoService.insert(producto);
@@ -64,7 +65,7 @@ public class ProductoController {
 
     //Actualizar producto ingresando Id
     @PutMapping("/{id}")
-    public ResponseEntity<ProductoResponseDto> update(@PathVariable UUID id, @RequestBody ProductoCreateDto dto) {
+    public ResponseEntity<ProductoResponseDto> update(@PathVariable UUID id, @Valid @RequestBody ProductoCreateDto dto) {
         return productoService.listId(id).map(existing ->
             categoriaService.listId(dto.getCategoriaId()).map(categoria -> {
                 dto.applyTo(existing, categoria);

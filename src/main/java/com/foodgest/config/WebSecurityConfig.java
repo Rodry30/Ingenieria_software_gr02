@@ -60,7 +60,11 @@ public class WebSecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
-                                "/error"
+                                "/error",
+                                // Culqi llama este endpoint sin JWT (es un servidor externo);
+                                // la autenticacion la da la firma HMAC verificada en el propio
+                                // metodo (fail-closed si falta el secreto o la firma).
+                                "/api/pedidos/transacciones/webhook-pagos"
                         ).permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider)
