@@ -29,12 +29,14 @@ public class AuthController {
 
         AuthTokenResponseDto response = authService.register(dto);
 
+        boolean activado = response.getAccessToken() != null;
+        String mensaje = activado
+                ? "Usuario registrado y activado exitosamente."
+                : "Usuario registrado exitosamente. Pendiente de aprobacion.";
+
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(
-                        201,
-                        "Usuario registrado exitosamente. Pendiente de aprobacion.",
-                        response));
+                .body(ApiResponse.success(201, mensaje, response));
     }
 
     @PostMapping("/login")
