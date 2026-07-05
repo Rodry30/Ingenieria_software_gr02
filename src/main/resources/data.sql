@@ -49,22 +49,10 @@ VALUES
         true,
         NOW(),
         NOW()
-    ),
-    (
-        uuid_generate_v4(),
-        'Admin Sistema',
-        'admin@agromarket.com',
-        '$2a$10$dummyHashForTestingOnly1122334455',
-        'admin',
-        'activo',
-        '900000000',
-        'Centro Empresarial',
-        'Cusco',
-        'Cusco',
-        '08001',
-        NULL,
-        true,
-        NOW(),
-        NOW()
     )
+    -- Nota: antes habia un tercer seed 'Admin Sistema' con un password_hash
+    -- invalido (nadie podia loguearse con el). Se quito porque su sola
+    -- presencia (tipo_usuario='admin') bloquea POST /api/auth/bootstrap-admin,
+    -- que exige que no exista ningun admin todavia. El primer admin real se
+    -- crea ahora con ese endpoint.
     ON CONFLICT (email) DO NOTHING;
