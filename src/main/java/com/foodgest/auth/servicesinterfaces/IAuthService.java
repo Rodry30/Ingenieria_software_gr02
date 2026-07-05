@@ -1,6 +1,7 @@
 package com.foodgest.auth.servicesinterfaces;
 
 import com.foodgest.auth.dtos.AuthTokenResponseDto;
+import com.foodgest.auth.dtos.BootstrapAdminDto;
 import com.foodgest.auth.dtos.LoginRequestDto;
 import com.foodgest.auth.dtos.RefreshTokenDto;
 import com.foodgest.auth.dtos.RegisterRequestDto;
@@ -12,6 +13,12 @@ public interface IAuthService {
      * Retorna un JWT para que el usuario pueda autenticarse de inmediato.
      */
     AuthTokenResponseDto register(RegisterRequestDto dto);
+
+    /**
+     * Crea el primer usuario admin del sistema. Solo funciona si todavia no
+     * existe ningun admin; de lo contrario lanza un error.
+     */
+    AuthTokenResponseDto bootstrapAdmin(BootstrapAdminDto dto);
 
     /**
      * Autentica un usuario existente y retorna un JWT.

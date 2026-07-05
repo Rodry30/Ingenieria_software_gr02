@@ -1,6 +1,7 @@
 package com.foodgest.auth.controllers;
 
 import com.foodgest.auth.dtos.AuthTokenResponseDto;
+import com.foodgest.auth.dtos.BootstrapAdminDto;
 import com.foodgest.auth.dtos.LoginRequestDto;
 import com.foodgest.auth.dtos.RefreshTokenDto;
 import com.foodgest.auth.dtos.RegisterRequestDto;
@@ -37,6 +38,18 @@ public class AuthController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(201, mensaje, response));
+    }
+
+    @PostMapping("/bootstrap-admin")
+    @Operation(summary = "Crear el primer admin", description = "Solo funciona si todavia no existe ningun usuario admin en el sistema")
+    public ResponseEntity<ApiResponse<AuthTokenResponseDto>> bootstrapAdmin(
+            @Valid @RequestBody BootstrapAdminDto dto) {
+
+        AuthTokenResponseDto response = authService.bootstrapAdmin(dto);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success(201, "Administrador creado exitosamente.", response));
     }
 
     @PostMapping("/login")

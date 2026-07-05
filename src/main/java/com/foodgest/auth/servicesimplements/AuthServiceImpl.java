@@ -3,6 +3,7 @@ package com.foodgest.auth.servicesimplements;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.foodgest.auth.JwtTokenProvider;
 import com.foodgest.auth.dtos.AuthTokenResponseDto;
+import com.foodgest.auth.dtos.BootstrapAdminDto;
 import com.foodgest.auth.dtos.LoginRequestDto;
 import com.foodgest.auth.dtos.RefreshTokenDto;
 import com.foodgest.auth.dtos.RegisterRequestDto;
@@ -105,9 +106,11 @@ public class AuthServiceImpl implements IAuthService {
         usuario.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
         usuario.setTelefono(dto.getTelefono());
         usuario.setTipoUsuario(dto.getTipoUsuario().name());
-        if (autoActivarRegistro) {
-            // Modo demo: sin esto, cualquier cuenta creada en vivo queda
-            // 'pendiente' y no puede loguearse sin una aprobacion manual.
+        // Los compradores no requieren revision manual (no manejan certificaciones
+        // de finca ni datos que verificar): quedan activos desde que se registran.
+        // Los agricultores si quedan 'pendiente' salvo que el modo demo este activo.
+        boolean activarInmediatamente = dto.getTipoUsuario() == TipoUsuarioEnum.comprador || autoActivarRegistro;
+        if (activarInmediatamente) {
             usuario.setEstado("activo");
             usuario.setVerificado(true);
         } else {
@@ -160,12 +163,42 @@ public class AuthServiceImpl implements IAuthService {
             log.warn("No se pudo enviar el correo de registro a {}: {}", usuario.getEmail(), ex.getMessage());
         }
 
-        if (autoActivarRegistro) {
+        if (activarInmediatamente) {
             String token = jwtTokenProvider.generateToken(usuario);
             String refreshToken = createRefreshToken(usuario).getToken();
             return AuthTokenResponseDto.of(token, refreshToken, usuario);
         }
         return AuthTokenResponseDto.pending(usuario);
+    }
+
+    @Override
+    @Transactional
+    public AuthTokenResponseDto bootstrapAdmin(BootstrapAdminDto dto) {
+        // Una vez que existe un admin, este endpoint queda cerrado para siempre;
+        // crear mas admins pasa a depender de POST /api/users (ya protegido con
+        // hasRole('ADMIN')). Esto evita que sea una puerta trasera permanente.
+        if (userRepository.existsByTipoUsuario("admin")) {
+            throw new BusinessException(
+                    "Ya existe un administrador en el sistema. Pide a un admin que cree tu cuenta.",
+                    HttpStatus.FORBIDDEN);
+        }
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new BusinessException("El email ya esta registrado", HttpStatus.CONFLICT);
+        }
+
+        UserEntities usuario = new UserEntities();
+        usuario.setNombre(dto.getNombre());
+        usuario.setEmail(dto.getEmail());
+        usuario.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
+        usuario.setTelefono(dto.getTelefono());
+        usuario.setTipoUsuario("admin");
+        usuario.setEstado("activo");
+        usuario.setVerificado(true);
+        userRepository.save(usuario);
+
+        String token = jwtTokenProvider.generateToken(usuario);
+        String refreshToken = createRefreshToken(usuario).getToken();
+        return AuthTokenResponseDto.of(token, refreshToken, usuario);
     }
 
     @Override
