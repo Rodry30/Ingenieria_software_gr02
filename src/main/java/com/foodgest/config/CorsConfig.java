@@ -17,7 +17,10 @@ public class CorsConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://127.0.0.1:*",
-                "https://*.foodgest.app"
+                "https://*.foodgest.app",
+                "https://front-food-gest.vercel.app",
+                "https://*.vercel.app"
+
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "x-culqi-signature"));
