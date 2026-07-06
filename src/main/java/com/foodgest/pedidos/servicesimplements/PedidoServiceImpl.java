@@ -66,7 +66,7 @@ public class PedidoServiceImpl implements IPedidoService {
     @Override
     @Transactional
     public PedidoResponseDto crear(PedidoCreateDto dto) {
-        Oferta oferta = ofertaRepository.findById(dto.getOfertaId())
+        Oferta oferta = ofertaRepository.findByIdForUpdate(dto.getOfertaId())
                 .orElseThrow(() -> new BusinessException("Oferta no encontrada", HttpStatus.NOT_FOUND));
         Comprador comprador = compradorRepository.findById(dto.getCompradorId())
                 .orElseThrow(() -> new BusinessException("Comprador no encontrado", HttpStatus.NOT_FOUND));

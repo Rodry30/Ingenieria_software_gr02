@@ -1,7 +1,9 @@
 package com.foodgest.marketplace.ofertas.repositories;
 
 import com.foodgest.marketplace.ofertas.entities.Oferta;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -31,6 +34,10 @@ public interface OfertaRepository extends JpaRepository<Oferta, UUID> {
 
     @Query("SELECT o FROM Oferta o JOIN FETCH o.producto WHERE o.agricultor.id = :agricultorId AND o.estado = :estado")
     List<Oferta> findByAgricultorIdAndEstado(@Param("agricultorId") UUID agricultorId, @Param("estado") String estado);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM Oferta o JOIN FETCH o.producto WHERE o.id = :id")
+    Optional<Oferta> findByIdForUpdate(@Param("id") UUID id);
 
     @Query(value = """
             SELECT
